@@ -1,18 +1,20 @@
 /*
- * main.cpp - SataUpdateBuffer Driver for Arena Breakout Infinite (UE 4.26.1)
+ * main.cpp - StorPortLogInternalError Driver for Arena Breakout Infinite (UE 4.26.1)
  *
- * STEALTH MODE - No IoCreateDevice or IoCreateSymbolicLink
- * Uses function hooking in signed system driver
+ * COMPLETE STEALTH MODE - No IoCreateDevice or IoCreateSymbolicLink
+ * Communication via .data pointer (Data PTR) in signed system driver
  * Target: ArenaBreakout.exe
  * Anti-Cheat: ACE (Tencent)
+ * 
+ * This driver is completely invisible to ACE Object Manager scans
+ * Memory operations use KeStackAttachProcess only
  */
 
 #include "definitions.h"
-#include "stealth_new.h"
-#include "memory_final.h"
-#include "communication_final.h"
+#include "stealth.h"
+#include "memory.h"
 
-/* ── Driver Entry (No Device Objects - Stealth Mode) ───────────────── */
+/* ── Driver Entry (No Device Objects - Complete Stealth) ───── */
 
 extern "C" NTSTATUS DriverEntry(
     PDRIVER_OBJECT  DriverObject,
@@ -20,11 +22,11 @@ extern "C" NTSTATUS DriverEntry(
 {
     UNREFERENCED_PARAMETER(RegistryPath);
     
-    DbgPrint("[+] SataUpdateBuffer Driver Entry Point\\n");
+    DbgPrint("[+] StorPortLogInternalError Driver Entry Point\\n");
     DbgPrint("[+] Target: Arena Breakout Infinite (UE 4.26.1)\\n");
     DbgPrint("[+] Anti-Cheat: ACE (Tencent)\\n");
-    DbgPrint("[+] STEALTH MODE - No device objects\\n");
-    DbgPrint("[+] WARNING: Always use HWID spoofer before testing\\n");
+    DbgPrint("[+] COMPLETE STEALTH MODE - No Device Objects\\n");
+    DbgPrint("[+] ACE Object Manager scan bypass\\n");
     
     /* Initialize stealth subsystem */
     NTSTATUS status = InitializeStealthSubsystem();
@@ -33,25 +35,27 @@ extern "C" NTSTATUS DriverEntry(
         return status;
     }
     
-    /* Apply ACE stealth hardening */
+    /* Apply ACE hardening - wipe ALL traces */
     status = ApplyACEStealthHardening(DriverObject);
     if (!NT_SUCCESS(status)) {
-        DbgPrint("[!] ACE stealth hardening failed: 0x%X\\n", status);
+        DbgPrint("[!] ACE hardening failed: 0x%X\\n", status);
         return status;
     }
     
-    /* Initialize stealth communication via function hooking */
-    status = InitializeHijackingCommunication();
+    /* Initialize .data pointer communication (no handles) */
+    status = InitializeDataPointerCommunication();
     if (!NT_SUCCESS(status)) {
-        DbgPrint("[!] Hijacking communication failed: 0x%X\\n", status);
+        DbgPrint("[!] Data pointer communication failed: 0x%X\\n", status);
         return status;
     }
     
-    DbgPrint("[+] SataUpdateBuffer Driver loaded successfully\\n");
-    DbgPrint("[+] Driver is now invisible to ACE (Tencent)\\n");
-    DbgPrint("[+] Communication via hooked function\\n");
-    DbgPrint("[+] NO device objects created\\n");
-    DbgPrint("[+] All traces cleaned from PiDDB and MmUnloadedDrivers\\n");
+    DbgPrint("[+] StorPortLogInternalError Driver loaded successfully\\n");
+    DbgPrint("[+] Driver is now INVISIBLE to ACE (Tencent)\\n");
+    DbgPrint("[+] Communication via .data pointer in signed system driver\\n");
+    DbgPrint("[+] ZERO device objects created\\n");
+    DbgPrint("[+] ALL traces wiped from PiDDB and MmUnloadedDrivers\\n");
+    DbgPrint("[+] DriverSection and LDR_DATA_TABLE_ENTRY nullified\\n");
+    DbgPrint("[+] ACE Object Manager scan completely bypassed\\n");
     
     return STATUS_SUCCESS;
 }
