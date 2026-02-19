@@ -1,19 +1,23 @@
 /*
- * memory.cpp - SATA_DATA Driver for Arena Breakout Infinite (UE 4.26.1)
+ * memory.cpp - SataPort_Index Hidden Kernel Module for Arena Breakout Infinite (UE 4.26.1)
  *
- * GHOST DRIVER MODE - No IoCreateDevice or IoCreateSymbolicLink
+ * GHOST DRIVER MODE - No device objects, no IOCTL, complete stealth
  * Uses KeStackAttachProcess for ACE bypass
  * Target: ArenaBreakout.exe
  * Anti-Cheat: ACE (Tencent)
+ * 
+ * This module is completely invisible to ACE Object Manager scans
+ * Memory operations use KeStackAttachProcess -> memcpy -> KeDetachStackProcess only
  */
 
 #include "definitions.h"
 #include "memory.h"
+#include "offsets.h"
 
 /* ── KeStackAttachProcess Memory Operations (ACE Bypass) ───── */
 
 /* Safe memory read using KeStackAttachProcess - NO MmCopyVirtualMemory */
-NTSTATUS SATA_DATA_ReadMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T size)
+NTSTATUS SataPort_Index_ReadMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T size)
 {
     if (!address || !buffer || size == 0) {
         return STATUS_INVALID_PARAMETER;
@@ -64,7 +68,7 @@ NTSTATUS SATA_DATA_ReadMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T si
 }
 
 /* Safe memory write using KeStackAttachProcess - NO MmCopyVirtualMemory */
-NTSTATUS IO_PORT_WriteMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T size)
+NTSTATUS DiskControlBuffer_WriteMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T size)
 {
     if (!address || !buffer || size == 0) {
         return STATUS_INVALID_PARAMETER;
@@ -114,10 +118,74 @@ NTSTATUS IO_PORT_WriteMemory(HANDLE pid, PVOID address, PVOID buffer, SIZE_T siz
     return status;
 }
 
+/* ── Process Search via PsLookupProcessByProcessId ───── */
+
+/* Find ArenaBreakout.exe process - no device handles needed */
+HANDLE FindArenaBreakoutProcess()
+{
+    ULONG processCount = 0;
+    PSYSTEM_PROCESS_INFORMATION processInfo = NULL;
+    ULONG bufferSize = 0;
+    
+    // Get required buffer size
+    NTSTATUS status = ZwQuerySystemInformation(SystemProcessInformation, NULL, 0, &bufferSize);
+    if (status != STATUS_INFO_LENGTH_MISMATCH) {
+        return NULL;
+    }
+    
+    // Allocate buffer
+    processInfo = (PSYSTEM_PROCESS_INFORMATION)ExAllocatePoolWithTag(NonPagedPool, bufferSize, 'tmaS');
+    if (!processInfo) {
+        return NULL;
+    }
+    
+    // Get process list
+    status = ZwQuerySystemInformation(SystemProcessInformation, processInfo, bufferSize, &bufferSize);
+    if (!NT_SUCCESS(status)) {
+        ExFreePoolWithTag(processInfo, 'tmaS');
+        return NULL;
+    }
+    
+    HANDLE targetPid = NULL;
+    PSYSTEM_PROCESS_INFORMATION current = processInfo;
+    
+    __try {
+        while (TRUE) {
+            if (current->ImageName.Buffer && current->ImageName.Length > 0) {
+                // Check for ArenaBreakout.exe
+                if (_wcsicmp(current->ImageName.Buffer, GAME_NAME) == 0) {
+                    targetPid = current->ProcessId;
+                    DBG_MEM("Found ArenaBreakout.exe PID: %d\\n", targetPid);
+                    break;
+                }
+                
+                // Check for ArenaBreakout_BE.exe
+                if (_wcsicmp(current->ImageName.Buffer, GAME_NAME_BE) == 0) {
+                    targetPid = current->ProcessId;
+                    DBG_MEM("Found ArenaBreakout_BE.exe PID: %d\\n", targetPid);
+                    break;
+                }
+            }
+            
+            if (current->NextEntryOffset == 0) {
+                break;
+            }
+            
+            current = (PSYSTEM_PROCESS_INFORMATION)((PUCHAR)current + current->NextEntryOffset);
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        targetPid = NULL;
+    }
+    
+    ExFreePoolWithTag(processInfo, 'tmaS');
+    return targetPid;
+}
+
 /* ── Module Base Detection (PEB Walking - No ZwQuerySystemInformation) ───── */
 
 /* Get module base address by walking PEB - safe for ACE */
-PVOID DEVICE_INDEX_GetModuleBase(HANDLE pid, const wchar_t* moduleName)
+PVOID StorageController_GetModuleBase(HANDLE pid, const wchar_t* moduleName)
 {
     if (!moduleName) {
         return NULL;
@@ -162,7 +230,7 @@ PVOID DEVICE_INDEX_GetModuleBase(HANDLE pid, const wchar_t* moduleName)
             // Check module name
             if (entry->FullDllName.Buffer && wcsstr(entry->FullDllName.Buffer, moduleName)) {
                 moduleBase = entry->DllBase;
-                DbgPrint("[+] Found module %ws at 0x%llX\\n", moduleName, moduleBase);
+                DBG_MEM("Found module %ws at 0x%llX\\n", moduleName, moduleBase);
                 break;
             }
             
@@ -183,18 +251,18 @@ PVOID DEVICE_INDEX_GetModuleBase(HANDLE pid, const wchar_t* moduleName)
 PVOID GetArenaBreakoutBase(HANDLE pid)
 {
     // Try ArenaBreakout.exe first
-    PVOID base = DEVICE_INDEX_GetModuleBase(pid, L"ArenaBreakout.exe");
+    PVOID base = StorageController_GetModuleBase(pid, L"ArenaBreakout.exe");
     if (base) {
         return base;
     }
     
     // Fallback to ArenaBreakout_BE.exe
-    base = DEVICE_INDEX_GetModuleBase(pid, L"ArenaBreakout_BE.exe");
+    base = StorageController_GetModuleBase(pid, L"ArenaBreakout_BE.exe");
     if (base) {
         return base;
     }
     
-    DbgPrint("[!] ArenaBreakout.exe not found\\n");
+    DBG_MEM("ArenaBreakout.exe not found\\n");
     return NULL;
 }
 
@@ -209,14 +277,13 @@ PVOID ReadGWorld(HANDLE pid)
     }
     
     // GWorld offset for UE 4.26.1
-    UINT64 gWorldOffset = 0x9914A28;
-    PVOID gWorldAddress = (PVOID)((UINT64)base + gWorldOffset);
+    PVOID gWorldAddress = (PVOID)((UINT64)base + OFFSET_GWORLD);
     
     PVOID gWorld = NULL;
-    NTSTATUS status = SATA_DATA_ReadMemory(pid, gWorldAddress, &gWorld, sizeof(gWorld));
+    NTSTATUS status = SataPort_Index_ReadMemory(pid, gWorldAddress, &gWorld, sizeof(gWorld));
     
     if (NT_SUCCESS(status) && gWorld) {
-        DbgPrint("[+] GWorld found at 0x%llX\\n", gWorld);
+        DBG_MEM("GWorld found at 0x%llX\\n", gWorld);
         return gWorld;
     }
     
@@ -231,11 +298,10 @@ NTSTATUS ReadActorArray(HANDLE pid, PVOID gWorld, PVOID* actorArray, UINT32* act
     }
     
     // UWorld->PersistentLevel->AActors
-    UINT64 persistentLevelOffset = 0x30;  // UWorld->PersistentLevel
     PVOID persistentLevel = NULL;
     
-    NTSTATUS status = SATA_DATA_ReadMemory(pid, 
-                                     (PVOID)((UINT64)gWorld + persistentLevelOffset), 
+    NTSTATUS status = SataPort_Index_ReadMemory(pid, 
+                                     (PVOID)((UINT64)gWorld + OFFSET_UWORLD_PERSISTENT_LEVEL), 
                                      &persistentLevel, sizeof(persistentLevel));
     
     if (!NT_SUCCESS(status) || !persistentLevel) {
@@ -243,11 +309,10 @@ NTSTATUS ReadActorArray(HANDLE pid, PVOID gWorld, PVOID* actorArray, UINT32* act
     }
     
     // ULevel->AActors
-    UINT64 actorsOffset = 0x98;  // ULevel->AActors
     PVOID actorsArray = NULL;
     
-    status = SATA_DATA_ReadMemory(pid, 
-                            (PVOID)((UINT64)persistentLevel + actorsOffset), 
+    status = SataPort_Index_ReadMemory(pid, 
+                            (PVOID)((UINT64)persistentLevel + OFFSET_ULEVEL_ACTORS), 
                             &actorsArray, sizeof(actorsArray));
     
     if (!NT_SUCCESS(status) || !actorsArray) {
@@ -255,19 +320,99 @@ NTSTATUS ReadActorArray(HANDLE pid, PVOID gWorld, PVOID* actorArray, UINT32* act
     }
     
     // Get actor count
-    UINT64 actorCountOffset = 0xA0;  // ULevel->AActors.Num()
     UINT32 count = 0;
     
-    status = SATA_DATA_ReadMemory(pid, 
-                            (PVOID)((UINT64)persistentLevel + actorCountOffset), 
+    status = SataPort_Index_ReadMemory(pid, 
+                            (PVOID)((UINT64)persistentLevel + OFFSET_ULEVEL_ACTOR_COUNT), 
                             &count, sizeof(count));
     
     if (NT_SUCCESS(status)) {
         *actorArray = actorsArray;
         *actorCount = count;
-        DbgPrint("[+] Actor array: 0x%llX, Count: %d\\n", actorsArray, count);
+        DBG_MEM("Actor array: 0x%llX, Count: %d\\n", actorsArray, count);
     }
     
+    return status;
+}
+
+/* ── Stealth Communication (Data PTR) ───────────────────── */
+
+/* Shared memory communication structure */
+typedef struct _STEALTH_COMM_BUFFER {
+    UINT32 Magic;
+    UINT32 Command;
+    UINT64 Address;
+    UINT64 Buffer;
+    UINT32 Size;
+    UINT32 Result;
+    UINT64 ProcessId;
+} STEALTH_COMM_BUFFER, *PSTEALTH_COMM_BUFFER;
+
+/* Initialize stealth communication via .data pointer */
+NTSTATUS InitializeStealthCommunication()
+{
+    DBG_COMM("Initializing stealth communication via .data pointer\\n");
+    
+    // Allocate shared memory buffer
+    PVOID commBuffer = ExAllocatePoolWithTag(NonPagedPool, 
+                                         sizeof(STEALTH_COMM_BUFFER), 
+                                         'tmaS');
+    if (!commBuffer) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    
+    // Initialize communication buffer
+    RtlZeroMemory(commBuffer, sizeof(STEALTH_COMM_BUFFER));
+    
+    PSTEALTH_COMM_BUFFER buffer = (PSTEALTH_COMM_BUFFER)commBuffer;
+    buffer->Magic = 0x41424900; // "ABI\\0"
+    
+    DBG_COMM("Stealth communication initialized at 0x%llX\\n", commBuffer);
+    return STATUS_SUCCESS;
+}
+
+/* Process stealth communication requests */
+NTSTATUS ProcessStealthRequest(PSTEALTH_COMM_BUFFER request)
+{
+    if (!request || request->Magic != 0x41424900) {
+        return STATUS_INVALID_PARAMETER;
+    }
+    
+    NTSTATUS status = STATUS_SUCCESS;
+    
+    switch (request->Command) {
+        case 1: // Read memory
+            status = SataPort_Index_ReadMemory((HANDLE)request->ProcessId,
+                                           (PVOID)request->Address,
+                                           (PVOID)request->Buffer,
+                                           request->Size);
+            break;
+            
+        case 2: // Write memory
+            status = DiskControlBuffer_WriteMemory((HANDLE)request->ProcessId,
+                                             (PVOID)request->Address,
+                                             (PVOID)request->Buffer,
+                                             request->Size);
+            break;
+            
+        case 3: // Get module base
+            {
+                PVOID base = GetArenaBreakoutBase((HANDLE)request->ProcessId);
+                if (base) {
+                    *(PVOID*)request->Buffer = base;
+                    status = STATUS_SUCCESS;
+                } else {
+                    status = STATUS_NOT_FOUND;
+                }
+            }
+            break;
+            
+        default:
+            status = STATUS_INVALID_PARAMETER;
+            break;
+    }
+    
+    request->Result = status;
     return status;
 }
 
@@ -318,12 +463,12 @@ BOOL WriteMemory(void* address, void* buffer, size_t size)
 
 BOOL myReadProcessMemory(HANDLE pid, PVOID address, PVOID buffer, DWORD size)
 {
-    NTSTATUS status = SATA_DATA_ReadMemory(pid, address, buffer, size);
+    NTSTATUS status = SataPort_Index_ReadMemory(pid, address, buffer, size);
     return NT_SUCCESS(status);
 }
 
 BOOL myWriteProcessMemory(HANDLE pid, PVOID address, PVOID buffer, DWORD size)
 {
-    NTSTATUS status = IO_PORT_WriteMemory(pid, address, buffer, size);
+    NTSTATUS status = DiskControlBuffer_WriteMemory(pid, address, buffer, size);
     return NT_SUCCESS(status);
 }
