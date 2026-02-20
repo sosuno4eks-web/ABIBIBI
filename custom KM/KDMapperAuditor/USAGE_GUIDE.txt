@@ -1,0 +1,192 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    KDMapper Auditor - Quick Usage Guide                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+WHAT IS THIS?
+-------------
+KDMapper Auditor verifies that your modified KDMapper leaves no detectable
+traces on Windows 10 22H2. It's designed to test against ACE Anti-Cheat used
+in Arena Breakout Infinite.
+
+WHEN TO USE
+-----------
+✓ After modifying KDMapper (renaming strings, changing driver, etc.)
+✓ Before each gaming session
+✓ After Windows updates
+✓ After anti-cheat updates
+✓ When testing new stealth techniques
+
+HOW TO USE
+----------
+1. Build the project in Visual Studio 2022 (Release x64)
+2. Right-click KDMapperAuditor.exe → Run as Administrator
+3. Review the test results
+4. If all tests pass → Safe to proceed
+5. If tests fail → Fix issues and re-test
+
+WHAT IT CHECKS
+--------------
+[1] String Scan          - Scans kernel memory for mapper strings
+[2] MmUnloadedDrivers    - Checks unloaded driver list for traces
+[3] PiDDBCache           - Verifies driver database entries removed
+[4] Event Log Scan       - Checks Windows Event Viewer for driver loads
+[5] IOCTL Verification   - Tests if mapper IOCTLs still respond
+[6] Handle Enumeration   - Checks for suspicious driver handles
+[7] Signature Check      - Verifies test signing is disabled
+
+INTERPRETING RESULTS
+--------------------
+[SECURE]     = Test passed, no traces detected (GREEN)
+[VULNERABLE] = Test failed, traces found (RED)
+[WARNING]    = Non-critical issue (YELLOW)
+
+PASSING SCORE
+-------------
+7/7 tests must pass for safe deployment
+Anything less = DO NOT USE until fixed
+
+COMMON FAILURES
+---------------
+Test 1 Fails → Rename all strings in your mapper
+Test 2 Fails → Clear MmUnloadedDrivers in driver
+Test 3 Fails → Clear PiDDB cache in driver
+Test 4 Fails → Clear event logs after driver load
+Test 5 Fails → Change IOCTL codes and device names
+Test 6 Fails → Close all handles before unload
+Test 7 Fails → Disable test signing (bcdedit /set testsigning off)
+
+WORKFLOW
+--------
+1. Modify KDMapper
+   ↓
+2. Build modified mapper
+   ↓
+3. Load driver via mapper
+   ↓
+4. Run KDMapper Auditor ← YOU ARE HERE
+   ↓
+5. All tests pass? → Proceed to game
+   ↓
+6. Tests fail? → Fix and repeat from step 1
+
+REQUIREMENTS
+------------
+• Windows 10 22H2 (Build 19045)
+• Administrator privileges
+• Visual Studio 2022 (for building)
+• x64 architecture
+
+SAFETY TIPS
+-----------
+✓ Always run auditor BEFORE starting the game
+✓ Run on clean system (no other cheats active)
+✓ Test in safe environment first
+✓ Don't skip tests - all must pass
+✓ Re-test after any changes
+
+WHAT IT CANNOT DETECT
+----------------------
+✗ Behavioral analysis by anti-cheat
+✗ Kernel-mode anti-cheat scanning
+✗ Hardware-based detection
+✗ Network-based detection
+✗ Advanced heuristics
+
+CUSTOMIZATION
+-------------
+Edit KDMapperAuditor.cpp to add:
+• Your custom strings to scan for
+• Your vulnerable driver name
+• Your custom IOCTL codes
+• Additional checks
+
+BUILD INSTRUCTIONS
+------------------
+1. Open KDMapperAuditor.vcxproj in Visual Studio 2022
+2. Set configuration to Release x64
+3. Build → Build Solution (Ctrl+Shift+B)
+4. Output: x64/Release/KDMapperAuditor.exe
+
+TROUBLESHOOTING
+---------------
+Issue: "Failed to enable debug privilege"
+Fix:   Run as Administrator
+
+Issue: "Failed to query system module information"
+Fix:   Run as Administrator, check Windows security
+
+Issue: No output or crashes
+Fix:   Verify Windows 10 22H2, x64 architecture
+
+Issue: False positives
+Fix:   Review each detection, verify if related to your mapper
+
+EXAMPLE OUTPUT (ALL PASS)
+--------------------------
+=== TEST 1: String Scan in System Memory ===
+[SECURE] String Scan
+
+=== TEST 2: MmUnloadedDrivers Trace Check ===
+[SECURE] MmUnloadedDrivers Check
+
+=== TEST 3: PiDDBCacheTable Verification ===
+[SECURE] PiDDBCache Check
+
+=== TEST 4: System Event Log Scan ===
+[SECURE] Event Log Scan
+
+=== TEST 5: IOCTL Verification ===
+[SECURE] IOCTL Verification
+
+=== TEST 6: Handle Enumeration Check ===
+[SECURE] Handle Enumeration
+
+=== TEST 7: Driver Signature Verification ===
+[SECURE] Driver Signature Check
+
+=== AUDIT SUMMARY ===
+Tests Passed: 7/7
+
+[✓] ALL TESTS PASSED - Mapper appears SECURE
+[✓] No obvious traces detected
+[✓] Should be safe against ACE detection
+
+EXAMPLE OUTPUT (FAILURE)
+-------------------------
+=== TEST 1: String Scan in System Memory ===
+  [!] Module: iqvw64e.sys contains: intel
+  [!] Vulnerable driver loaded: iqvw64e.sys
+[VULNERABLE] String Scan
+
+=== AUDIT SUMMARY ===
+Tests Passed: 6/7
+
+[✗] VULNERABILITIES DETECTED
+[✗] Mapper may be detectable by ACE
+[✗] Review failed tests and clean up traces
+
+NEXT STEPS AFTER PASSING
+-------------------------
+1. ✓ All tests passed
+2. Load your game cheat driver via mapper
+3. Start Arena Breakout
+4. Monitor for detection
+5. If detected → re-run auditor to find new traces
+
+SUPPORT
+-------
+For issues or questions:
+• Review README.md for detailed information
+• Check source code comments
+• Test in safe environment first
+
+DISCLAIMER
+----------
+This tool checks for KNOWN detection vectors. Anti-cheat systems evolve
+constantly. Passing all tests does NOT guarantee 100% undetectability.
+Always test in safe environment first. Use at your own risk.
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         Ready to Audit Your Mapper                           ║
+║                    Run as Administrator to begin testing                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
