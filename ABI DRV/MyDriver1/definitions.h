@@ -12,7 +12,10 @@
 #include <intrin.h>
 #include <ntstrsafe.h>
 
+// Additional linker dependencies for stealth operations
 #pragma comment(lib, "ntoskrnl.lib")
+#pragma comment(lib, "hal.lib")
+#pragma comment(lib, "wmilib.lib")
 
 // PEB and LDR structure guards to prevent redefinition conflicts with Windows SDK
 #ifndef _PEB_DEFINED_
@@ -60,6 +63,38 @@ typedef struct _PEB {
 
 #endif // _PEB_DEFINED_
 
+// Windows 10 Pro 22H2 (Build 19045) Structure Offsets
+#define EPROCESS_PsLoadedModuleListOffset 0x0188
+#define EPROCESS_PebOffset               0x550
+#define EPROCESS_ProcessLockOffset        0x2F8
+#define EPROCESS_VadRootOffset           0x7D8
+#define EPROCESS_AweInfoOffset           0x5A8
+#define EPROCESS_ObjectTableOffset       0x580
+#define EPROCESS_DebugPortOffset          0x3E8
+#define EPROCESS_ExceptionPortOffset      0x3F0
+#define EPROCESS_UniqueProcessIdOffset    0x650
+
+// Windows 10 22H2 KAPC_STATE Offsets
+#define KAPC_STATE_ApcListEntry        0x98
+#define KAPC_STATE_Process             0xA0
+#define KAPC_STATE_KernelApcInProgress 0x128
+#define KAPC_STATE_UserApcPending     0x129
+
+// Windows 10 22H2 DRIVER_OBJECT Offsets
+#define DRIVER_OBJECT_Type               0x018
+#define DRIVER_OBJECT_Size                0x01C
+#define DRIVER_OBJECT_DeviceObject        0x038
+#define DRIVER_OBJECT_DriverSection      0x020
+#define DRIVER_OBJECT_DriverName          0x030
+#define DRIVER_OBJECT_DriverStart        0x070
+#define DRIVER_OBJECT_DriverSize          0x078
+#define DRIVER_OBJECT_DriverInit         0x080
+
+// Windows 10 22H2 OBJECT_HEADER Offsets
+#define OBJECT_HEADER_TypeOffset         0x018
+#define OBJECT_HEADER_HandleCountOffset   0x020
+#define OBJECT_HEADER_QuotaChargesOffset 0x050
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,9 +118,12 @@ typedef struct _COMM_PACKET {
     UINT64 Timestamp;
 } COMM_PACKET, *PCOMMAND_PACKET;
 
-// Legacy compatibility
+// Legacy compatibility - use SDK definitions if available
+#ifndef COMMAND_PACKET_DEFINED
+#define COMMAND_PACKET_DEFINED
 typedef COMM_PACKET COMMAND_PACKET;
 typedef PCOMMAND_PACKET PCOMMAND_PACKET;
+#endif
 
 // Communication packet flags
 #define COMM_FLAG_READ_OPERATION     0x00000001
@@ -94,9 +132,57 @@ typedef PCOMMAND_PACKET PCOMMAND_PACKET;
 #define COMM_FLAG_VALIDATE_POINTERS  0x00000008
 #define COMM_FLAG_EXCEPTION_SAFE     0x00000010
 
-// Command identifiers
-#define COMM_CMD_READ_MEMORY         1
-#define COMM_CMD_WRITE_MEMORY        2
-#define COMM_CMD_GET_MODULE_BASE     3
-#define COMM_CMD_MIRROR_BLOCK        4
-#define COMM_CMD_VALIDATE_ADDRESS    5
+// Command identifiers for Storage Driver
+#define STORAGE_CMD_READ_MEMORY         0x1
+#define STORAGE_CMD_WRITE_MEMORY        0x2
+#define STORAGE_CMD_GET_MODULE_BASE     0x3
+
+// Memory operation constants
+#define MEMORY_ALLOCATION_ALIGNMENT  0x1000
+#define MAX_MEMORY_TRANSFER_SIZE     0x100000  // 1MB
+
+// System module information
+typedef struct _SYSTEM_MODULE_INFORMATION {
+    ULONG Reserved[2];
+    PVOID Base;
+    ULONG Size;
+    ULONG Flags;
+    USHORT Index;
+    USHORT Unknown;
+    USHORT LoadCount;
+    USHORT ModuleNameOffset;
+    CHAR ImageName[256];
+} SYSTEM_MODULE_INFORMATION, *PSYSTEM_MODULE_INFORMATION;
+
+typedef struct _SYSTEM_MODULE_INFORMATION_EX {
+    ULONG ModulesCount;
+    SYSTEM_MODULE_INFORMATION Modules[1];
+} SYSTEM_MODULE_INFORMATION_EX, *PSYSTEM_MODULE_INFORMATION_EX;
+
+// Function prototypes for stealth operations
+PVOID GetSystemModuleBase(const char* moduleName);
+PVOID GetSystemModuleExport(const char* moduleName, LPCSTR routineName);
+NTSTATUS InitializeStorageCommunication();
+
+// Storage Driver function prototypes
+NTSTATUS SyncMemory(HANDLE pid, PVOID src, PVOID dst, SIZE_T size, BOOLEAN write);
+NTSTATUS StorageSafeCopy(HANDLE processId, PVOID targetAddress, PVOID buffer, SIZE_T size, BOOLEAN isWrite);
+NTSTATUS StorageMmCopyVirtualMemory(HANDLE sourcePid, PVOID sourceAddress, HANDLE targetPid, PVOID targetAddress, SIZE_T size);
+NTSTATUS StorageGetModuleBase(HANDLE processId, PVOID* moduleBase);
+VOID StorageWriteReadOnlyMemory(PVOID address, PVOID data, SIZE_T size);
+
+// Hook function prototypes
+NTSTATUS StorageInstallHook();
+NTSTATUS StorageUninstallHook();
+NTSTATUS StorageInitializeHijackedCommunication();
+NTSTATUS StorageExternalCommInterface(PCOMM_PACKET packet);
+NTSTATUS SataInternalHandler(PCOMM_PACKET packet);
+
+// Stealth function prototypes
+BOOLEAN HideDriverModule(PDRIVER_OBJECT DriverObject);
+BOOLEAN StorageEraseFromPsLoadedModuleList(PDRIVER_OBJECT DriverObject);
+VOID StorageZeroDriverNames(PDRIVER_OBJECT DriverObject);
+BOOLEAN StorageWipePiDDBCacheTable();
+BOOLEAN StorageClearMmUnloadedDrivers();
+VOID StorageScrubHeaders(PVOID driverBase);
+PVOID StorageFindPattern(PVOID base, SIZE_T size, const UCHAR* pattern, const char* mask);

@@ -1,16 +1,36 @@
+/*
+ * protocol.cpp - Storage Driver Protocol Communication
+ * Windows 10 Pro 22H2 (Build 19045) Compatible
+ * Target: ABI Process Memory Access
+ */
+
 #include "definitions.h"
 #include "memory.h"
 
+/* ── Storage Driver Protocol Communication Bridge ───────────────── */
+
+typedef struct _STORAGE_COMM_CONTEXT {
+    PVOID SharedMemory;
+    SIZE_T SharedMemorySize;
+    BOOLEAN IsInitialized;
+    UNICODE_STRING TargetProcess;
+    KSPIN_LOCK CommLock;
+    UINT64 RequestCounter;
+    UINT64 ResponseCounter;
+} STORAGE_COMM_CONTEXT, *PSTORAGE_COMM_CONTEXT;
+
+static STORAGE_COMM_CONTEXT g_StorageCommContext = { 0 };
+
 /* ── Communication Handler Function Pointer ───────────────────── */
 
-typedef NTSTATUS (*PCOMM_HANDLER)(PCOMM_PACKET packet);
+typedef NTSTATUS (*PSTORAGE_COMM_HANDLER)(PCOMM_PACKET packet);
 
-static PCOMM_HANDLER g_CommHandler = NULL;
+static PSTORAGE_COMM_HANDLER g_StorageCommHandler = NULL;
 static PVOID g_HandlerLocation = NULL;
 
-/* ── Communication Handler Implementation ───────────────────── */
+/* ── Storage Driver Communication Handler Implementation ───────── */
 
-NTSTATUS HandleCommPacket(PCOMM_PACKET packet)
+NTSTATUS StorageCommHandler(PCOMM_PACKET packet)
 {
     if (!packet) {
         return STATUS_INVALID_PARAMETER;
@@ -18,89 +38,35 @@ NTSTATUS HandleCommPacket(PCOMM_PACKET packet)
 
     __try {
         // Validate packet structure
-        if (packet->Size > 0x100000) { // 1MB max size
+        if (packet->Size > MAX_MEMORY_TRANSFER_SIZE) {
             return STATUS_INVALID_PARAMETER;
         }
 
-        // Add timestamp for debugging
+        // Add timestamp and increment counters
         packet->Timestamp = KeQueryTimeIncrement();
-
-        switch (packet->Command) {
-            case COMM_CMD_READ_MEMORY:
-                packet->Flags |= COMM_FLAG_READ_OPERATION;
-                packet->Result = StorPortLogInternalError(
-                    packet->ProcessId,
-                    packet->TargetAddress,
-                    packet->Buffer,
-                    packet->Size
-                );
-                break;
-
-            case COMM_CMD_WRITE_MEMORY:
-                packet->Flags |= COMM_FLAG_WRITE_OPERATION;
-                packet->Result = StorPortProcessRequest(
-                    packet->ProcessId,
-                    packet->TargetAddress,
-                    packet->Buffer,
-                    packet->Size
-                );
-                break;
-
-            case COMM_CMD_GET_MODULE_BASE:
-                {
-                    PVOID base = StorPortGetDeviceBase(packet->ProcessId);
-                    if (base) {
-                        *(PVOID*)packet->Buffer = base;
-                        packet->Result = STATUS_SUCCESS;
-                    } else {
-                        packet->Result = STATUS_NOT_FOUND;
-                    }
-                }
-                break;
-
-            case COMM_CMD_MIRROR_BLOCK:
-                packet->Flags |= COMM_FLAG_MIRROR_OPERATION;
-                packet->Result = MemoryMirrorBlock(
-                    (HANDLE)packet->ProcessId, // Source PID
-                    (HANDLE)packet->ModuleBase, // Target PID (reuse field)
-                    packet->SourceAddress,
-                    packet->TargetAddress,
-                    packet->Size
-                );
-                break;
-
-            case COMM_CMD_VALIDATE_ADDRESS:
-                packet->Flags |= COMM_FLAG_VALIDATE_POINTERS;
-                // Basic validation - check if address is readable
-                __try {
-                    ProbeForRead(packet->TargetAddress, 1, 1);
-                    packet->Result = STATUS_SUCCESS;
-                }
-                __except (EXCEPTION_EXECUTE_HANDLER) {
-                    packet->Result = STATUS_ACCESS_VIOLATION;
-                }
-                break;
-
-            default:
-                packet->Result = STATUS_INVALID_PARAMETER;
-                break;
-        }
-
         packet->Flags |= COMM_FLAG_EXCEPTION_SAFE;
-        return packet->Result;
+        InterlockedIncrement64((LONG64*)&g_StorageCommContext.RequestCounter);
+
+        NTSTATUS result = SataInternalHandler(packet);
+
+        InterlockedIncrement64((LONG64*)&g_StorageCommContext.ResponseCounter);
+        return result;
 
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (packet) {
+            packet->Result = STATUS_UNHANDLED_EXCEPTION;
+        }
         return STATUS_UNHANDLED_EXCEPTION;
     }
 }
 
 /* ── Handler Installation in System Module ───────────────────── */
 
-PVOID FindSuitableHandlerLocation()
+PVOID StorageFindHandlerLocation()
 {
     // Look for win32kbase.sys or other suitable system module
-    PVOID win32kBase = StorPortInitialize((HANDLE)4, L"win32kbase.sys");
+    PVOID win32kBase = GetSystemModuleBase("win32kbase.sys");
     if (!win32kBase) {
         // Fallback to ntoskrnl.exe
         return GetSystemModuleBase("ntoskrnl.exe");
@@ -108,11 +74,11 @@ PVOID FindSuitableHandlerLocation()
     return win32kBase;
 }
 
-NTSTATUS InstallCommunicationHandler()
+NTSTATUS StorageInstallCommunicationHandler()
 {
     __try {
         // Find a suitable location in system module
-        PVOID moduleBase = FindSuitableHandlerLocation();
+        PVOID moduleBase = StorageFindHandlerLocation();
         if (!moduleBase) {
             return STATUS_NOT_FOUND;
         }
@@ -124,11 +90,11 @@ NTSTATUS InstallCommunicationHandler()
         
         // For now, we'll use a simple approach
         g_HandlerLocation = moduleBase;
-        g_CommHandler = HandleCommPacket;
+        g_StorageCommHandler = StorageCommHandler;
 
         // In production, this would involve:
         // - Finding unused function pointer in .data section
-        // - Using WriteReadOnlyMemory to install handler
+        // - Using StorageWriteReadOnlyMemory to install handler
         // - Setting up proper calling conventions
 
         return STATUS_SUCCESS;
@@ -139,7 +105,76 @@ NTSTATUS InstallCommunicationHandler()
     }
 }
 
-/* ── SataProtocolStart Main Function ───────────────────────── */
+/* ── Shared Memory Management ───────────────────────────────── */
+
+NTSTATUS StorageCreateSharedMemory(SIZE_T size)
+{
+    __try {
+        PVOID sharedMemory = ExAllocatePoolWithTag(NonPagedPool, size, 'kcuS');
+        if (!sharedMemory) {
+            return STATUS_INSUFFICIENT_RESOURCES;
+        }
+
+        RtlZeroMemory(sharedMemory, size);
+
+        g_StorageCommContext.SharedMemory = sharedMemory;
+        g_StorageCommContext.SharedMemorySize = size;
+        g_StorageCommContext.IsInitialized = TRUE;
+
+        KeInitializeSpinLock(&g_StorageCommContext.CommLock);
+        RtlInitUnicodeString(&g_StorageCommContext.TargetProcess, L"ABI.exe");
+
+        return STATUS_SUCCESS;
+
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return STATUS_UNHANDLED_EXCEPTION;
+    }
+}
+
+VOID StorageDestroySharedMemory()
+{
+    __try {
+        if (g_StorageCommContext.SharedMemory) {
+            ExFreePoolWithTag(g_StorageCommContext.SharedMemory, 'kcuS');
+            g_StorageCommContext.SharedMemory = NULL;
+        }
+
+        g_StorageCommContext.IsInitialized = FALSE;
+        g_StorageCommContext.SharedMemorySize = 0;
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        // Silent failure
+    }
+}
+
+/* ── Storage Communication Initialization ───────────────────────── */
+
+NTSTATUS InitializeStorageCommunication()
+{
+    __try {
+        // Create shared memory for communication
+        NTSTATUS status = StorageCreateSharedMemory(0x10000); // 64KB
+        if (!NT_SUCCESS(status)) {
+            return status;
+        }
+
+        // Install communication handler
+        status = StorageInstallCommunicationHandler();
+        if (!NT_SUCCESS(status)) {
+            StorageDestroySharedMemory();
+            return status;
+        }
+
+        return STATUS_SUCCESS;
+
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return STATUS_UNHANDLED_EXCEPTION;
+    }
+}
+
+/* ── SataProtocolStart Main Function (Storage Driver) ─────── */
 
 extern "C" NTSTATUS SataProtocolStart()
 {
@@ -151,14 +186,14 @@ extern "C" NTSTATUS SataProtocolStart()
         }
 
         // Install our custom communication handler
-        status = InstallCommunicationHandler();
+        status = StorageInitializeHijackedCommunication();
         if (!NT_SUCCESS(status)) {
             return status;
         }
 
         // Set up handler pointer for external invocation
         // This would be called from user mode or another system module
-        if (g_CommHandler && g_HandlerLocation) {
+        if (g_StorageCommHandler && g_HandlerLocation) {
             // Store handler pointer at known location for external access
             // In production, this would be a carefully chosen location
             // that can be safely accessed from user mode
@@ -176,10 +211,41 @@ extern "C" NTSTATUS SataProtocolStart()
 
 // This function would be called from external modules
 // In production, this would be at a known offset in system module
-NTSTATUS ExternalCommInterface(PCOMM_PACKET packet)
+NTSTATUS StorageExternalCommInterface(PCOMM_PACKET packet)
 {
-    if (g_CommHandler) {
-        return g_CommHandler(packet);
+    if (g_StorageCommHandler) {
+        return g_StorageCommHandler(packet);
     }
     return STATUS_DEVICE_NOT_READY;
+}
+
+/* ── Communication Statistics ─────────────────────────────────── */
+
+typedef struct _STORAGE_COMM_STATS {
+    UINT64 TotalRequests;
+    UINT64 TotalResponses;
+    UINT64 FailedRequests;
+    UINT64 AverageResponseTime;
+    SIZE_T SharedMemoryUsage;
+} STORAGE_COMM_STATS, *PSTORAGE_COMM_STATS;
+
+NTSTATUS StorageGetCommunicationStats(PSTORAGE_COMM_STATS stats)
+{
+    if (!stats) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    __try {
+        stats->TotalRequests = g_StorageCommContext.RequestCounter;
+        stats->TotalResponses = g_StorageCommContext.ResponseCounter;
+        stats->FailedRequests = 0; // Would track failures in production
+        stats->AverageResponseTime = 0; // Would calculate in production
+        stats->SharedMemoryUsage = g_StorageCommContext.SharedMemorySize;
+
+        return STATUS_SUCCESS;
+
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return STATUS_UNHANDLED_EXCEPTION;
+    }
 }
