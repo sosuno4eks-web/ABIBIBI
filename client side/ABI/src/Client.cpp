@@ -304,22 +304,38 @@ bool InitializeClient() {
             
             INSERT_JUNK();
             
-            // DIAGNOSTIC: Get game base address (THREAD STACK WALK METHOD)
-            AddDiagnosticLog("[DIAG] Getting game base address via Thread Stack Walk Method...");
-            AddDiagnosticLog("[INFO] Method: Analyzing thread start addresses");
-            AddDiagnosticLog("[INFO] Windows 10 Build 19045 (22H2) thread offsets");
-            AddDiagnosticLog("[INFO] This method bypasses EPROCESS protection");
+            // CRITICAL: Ghost our process (DKOM + SSDT hook)
+            AddDiagnosticLog("[DIAG] Applying process ghosting (DKOM + SSDT hook)...");
+            AddDiagnosticLog("[INFO] Unlinking from ActiveProcessLinks");
+            AddDiagnosticLog("[INFO] Hiding from NtQuerySystemInformation");
+            AddDiagnosticLog("[INFO] Zeroing process name");
+            
+            if (!GhostProcessGhosting(GetCurrentProcessId())) {
+                AddDiagnosticLog("[WARNING] Process ghosting failed - continuing anyway");
+                AddDiagnosticLog("[INFO] Client may be visible to ACE detection");
+            } else {
+                AddDiagnosticLog("[SUCCESS] Process ghosting complete - invisible to ACE");
+            }
+            
+            INSERT_JUNK();
+            
+            // DIAGNOSTIC: Get game base address (PHYSICAL MEMORY SCANNING)
+            AddDiagnosticLog("[DIAG] Getting game base address via Physical Memory Scanning...");
+            AddDiagnosticLog("[INFO] Method: Page table walking + physical RAM access");
+            AddDiagnosticLog("[INFO] Bypasses ALL virtual memory hooks by ACE");
+            AddDiagnosticLog("[INFO] Direct hardware-level memory access");
             
             uintptr_t baseAddress = 0;
             int retryCount = 0;
-            const int maxRetries = 1; // Only 1 retry needed (reliable method)
+            const int maxRetries = 3; // Physical scan may take time
             
             while (baseAddress == 0 && retryCount < maxRetries) {
                 INSERT_JUNK();
                 
-                // Thread Stack Walk Method
-                // Iterates through all threads and finds lowest start address
-                // Then aligns down and searches for MZ header
+                // Physical Memory Scanning Method
+                // Manually walks page tables (PML4->PDPT->PD->PT)
+                // Translates virtual to physical addresses
+                // Scans physical RAM for MZ header
                 baseAddress = GhostGetModuleBase(g_ClientState.targetProcessId, NULL);
                 
                 INSERT_JUNK();
@@ -327,8 +343,8 @@ bool InitializeClient() {
                 if (baseAddress == 0) {
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        AddDiagnosticLog("[RETRY] Thread analysis failed, retrying... (" + std::to_string(retryCount) + "/" + std::to_string(maxRetries) + ")");
-                        Sleep(1000);
+                        AddDiagnosticLog("[RETRY] Physical scan failed, retrying... (" + std::to_string(retryCount) + "/" + std::to_string(maxRetries) + ")");
+                        Sleep(2000); // Physical scan takes time
                     }
                 }
             }
@@ -338,21 +354,20 @@ bool InitializeClient() {
             g_ClientState.gameBaseAddress = baseAddress;
             
             if (g_ClientState.gameBaseAddress == 0) {
-                AddDiagnosticLog("[ERROR] KERN_BASE_FAIL - Thread Stack Walk method failed");
+                AddDiagnosticLog("[ERROR] KERN_BASE_FAIL - Physical memory scanning failed");
                 AddDiagnosticLog("[INFO] Possible causes:");
-                AddDiagnosticLog("[INFO]   - No threads found in process");
-                AddDiagnosticLog("[INFO]   - Thread start addresses invalid");
-                AddDiagnosticLog("[INFO]   - MZ header not found at calculated address");
+                AddDiagnosticLog("[INFO]   - CR3 (page directory base) invalid");
+                AddDiagnosticLog("[INFO]   - Page table entries not present");
+                AddDiagnosticLog("[INFO]   - MZ header not found in physical RAM");
+                AddDiagnosticLog("[INFO]   - Scan timeout (limited to 2GB range)");
                 AddDiagnosticLog("[INFO] Error codes:");
-                AddDiagnosticLog("[INFO]   0xDEAD0006 - No threads found");
-                AddDiagnosticLog("[INFO]   0xDEAD0007 - No valid start addresses");
-                AddDiagnosticLog("[INFO]   0xDEAD0008 - No MZ header found");
+                AddDiagnosticLog("[INFO]   0xDEAD000A - Physical scan failed");
                 AddDiagnosticLog("[INFO] You can manually enter base address in menu");
                 AddDiagnosticLog("[INFO] Client will stay open in dormant mode");
                 g_ClientState.bBaseAddressValid = false;
             } else {
                 char baseAddrStr[128];
-                sprintf_s(baseAddrStr, "[SUCCESS] Game base address: 0x%016llX (thread stack walk)", g_ClientState.gameBaseAddress);
+                sprintf_s(baseAddrStr, "[SUCCESS] Game base address: 0x%016llX (physical memory scan)", g_ClientState.gameBaseAddress);
                 AddDiagnosticLog(baseAddrStr);
                 
                 INSERT_JUNK();

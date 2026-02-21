@@ -8,6 +8,8 @@
  * - Hijacks syscall in win32kbase.sys
  * - Validates mutated packets
  * - Processes dynamic command IDs
+ * - Physical memory access (bypasses ACE hooks)
+ * - DKOM process hiding
  * - Zero traces
  * 
  * Target: Windows 10 22H2 (Build 19045)
@@ -17,6 +19,8 @@
 
 #include <ntifs.h>
 #include <ntddk.h>
+#include "physical_memory.h"
+#include "dkom.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +77,7 @@ typedef struct _MUTATED_PACKET {
 #define CMD_VALIDATE_ADDRESS    0x4000
 #define CMD_HANDSHAKE           0x5000
 #define CMD_MIRROR_MEMORY       0x6000
+#define CMD_GHOST_PROCESS       0x7000
 
 // Get current timestamp (seconds since epoch)
 static FORCEINLINE UINT64 GetTimestamp() {
@@ -113,7 +118,8 @@ static FORCEINLINE UINT32 DecodeDynamicCommandID(UINT32 commandID) {
         CMD_GET_MODULE_BASE,
         CMD_VALIDATE_ADDRESS,
         CMD_HANDSHAKE,
-        CMD_MIRROR_MEMORY
+        CMD_MIRROR_MEMORY,
+        CMD_GHOST_PROCESS
     };
     
     for (int i = 0; i < sizeof(bases) / sizeof(bases[0]); i++) {
@@ -204,7 +210,7 @@ VOID RemoveSyscallHijack();
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-// Read memory from target process
+// Read memory from target process (PHYSICAL MEMORY ACCESS)
 static FORCEINLINE NTSTATUS HandleReadMemory(PMUTATED_PACKET packet) {
     __try {
         PEPROCESS targetProcess = NULL;
@@ -214,21 +220,14 @@ static FORCEINLINE NTSTATUS HandleReadMemory(PMUTATED_PACKET packet) {
             return status;
         }
         
-        // Attach to target process
-        KAPC_STATE apcState;
-        KeStackAttachProcess(targetProcess, &apcState);
+        // Use PHYSICAL memory access (bypasses ACE hooks)
+        status = ReadPhysicalMemory(
+            targetProcess,
+            packet->SourceAddress,
+            (PVOID)packet->BufferAddress,
+            packet->Size
+        );
         
-        // Copy memory using safe method
-        __try {
-            ProbeForWrite((PVOID)packet->BufferAddress, packet->Size, 1);
-            RtlCopyMemory((PVOID)packet->BufferAddress, (PVOID)packet->SourceAddress, packet->Size);
-            status = STATUS_SUCCESS;
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER) {
-            status = STATUS_ACCESS_VIOLATION;
-        }
-        
-        KeUnstackDetachProcess(&apcState);
         ObDereferenceObject(targetProcess);
         
         packet->Status = NT_SUCCESS(status) ? 0 : 1;
@@ -240,7 +239,7 @@ static FORCEINLINE NTSTATUS HandleReadMemory(PMUTATED_PACKET packet) {
     }
 }
 
-// Write memory to target process
+// Write memory to target process (PHYSICAL MEMORY ACCESS)
 static FORCEINLINE NTSTATUS HandleWriteMemory(PMUTATED_PACKET packet) {
     __try {
         PEPROCESS targetProcess = NULL;
@@ -250,21 +249,14 @@ static FORCEINLINE NTSTATUS HandleWriteMemory(PMUTATED_PACKET packet) {
             return status;
         }
         
-        // Attach to target process
-        KAPC_STATE apcState;
-        KeStackAttachProcess(targetProcess, &apcState);
+        // Use PHYSICAL memory access (bypasses ACE hooks)
+        status = WritePhysicalMemory(
+            targetProcess,
+            packet->TargetAddress,
+            (PVOID)packet->BufferAddress,
+            packet->Size
+        );
         
-        // Copy memory using safe method
-        __try {
-            ProbeForRead((PVOID)packet->BufferAddress, packet->Size, 1);
-            RtlCopyMemory((PVOID)packet->TargetAddress, (PVOID)packet->BufferAddress, packet->Size);
-            status = STATUS_SUCCESS;
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER) {
-            status = STATUS_ACCESS_VIOLATION;
-        }
-        
-        KeUnstackDetachProcess(&apcState);
         ObDereferenceObject(targetProcess);
         
         packet->Status = NT_SUCCESS(status) ? 0 : 1;
@@ -276,7 +268,7 @@ static FORCEINLINE NTSTATUS HandleWriteMemory(PMUTATED_PACKET packet) {
     }
 }
 
-// Get module base address (THREAD STACK WALK METHOD - Ultimate reliability)
+// Get module base address (PHYSICAL MEMORY SCANNING - Ultimate ACE bypass)
 static FORCEINLINE NTSTATUS HandleGetModuleBase(PMUTATED_PACKET packet) {
     __try {
         PEPROCESS targetProcess = NULL;
@@ -288,141 +280,23 @@ static FORCEINLINE NTSTATUS HandleGetModuleBase(PMUTATED_PACKET packet) {
             return status;
         }
         
-        // THREAD STACK WALK METHOD
-        // This method finds the base address by analyzing thread start addresses
-        // ACE cannot zero these out without breaking the game
-        // This is the most reliable method against anti-cheat protection
+        // PHYSICAL MEMORY SCANNING METHOD
+        // This method bypasses ALL virtual memory hooks by ACE
+        // Directly accesses physical RAM via page table walking
+        // ACE cannot spoof physical memory without kernel-level hypervisor
         
-        PVOID foundBase = NULL;
-        UINT64 lowestStartAddress = 0xFFFFFFFFFFFFFFFFULL;
-        ULONG threadCount = 0;
-        
-        __try {
-            // Windows 10 Build 19045 (22H2) EPROCESS offsets
-            const ULONG_PTR THREAD_LIST_HEAD_OFFSET = 0x5E0;  // ThreadListHead offset
-            
-            // Get ThreadListHead from EPROCESS
-            PLIST_ENTRY threadListHead = (PLIST_ENTRY)((ULONG_PTR)targetProcess + THREAD_LIST_HEAD_OFFSET);
-            PLIST_ENTRY currentEntry = threadListHead->Flink;
-            
-            // Iterate through all threads in the process
-            while (currentEntry != threadListHead && threadCount < 1000) {
-                __try {
-                    // Calculate ETHREAD address from list entry
-                    // ThreadListEntry is at offset 0x6F8 in ETHREAD
-                    const ULONG_PTR THREAD_LIST_ENTRY_OFFSET = 0x6F8;
-                    PETHREAD currentThread = (PETHREAD)((ULONG_PTR)currentEntry - THREAD_LIST_ENTRY_OFFSET);
-                    
-                    // Get thread start address from ETHREAD structure
-                    // Win32StartAddress is at offset 0x620 in ETHREAD on Windows 10 Build 19045
-                    const ULONG_PTR WIN32_START_ADDRESS_OFFSET = 0x620;
-                    PVOID startAddress = *(PVOID*)((ULONG_PTR)currentThread + WIN32_START_ADDRESS_OFFSET);
-                    
-                    if (startAddress != NULL) {
-                        UINT64 startAddr = (UINT64)startAddress;
-                        
-                        // Check if this is in user-mode range
-                        if (startAddr >= 0x0000000000010000ULL && 
-                            startAddr < 0x00007FFFFFFFFFFFULL) {
-                            
-                            // Track the lowest start address
-                            if (startAddr < lowestStartAddress) {
-                                lowestStartAddress = startAddr;
-                            }
-                            
-                            threadCount++;
-                        }
-                    }
-                    
-                    // Move to next thread
-                    currentEntry = currentEntry->Flink;
-                    
-                }
-                __except (EXCEPTION_EXECUTE_HANDLER) {
-                    // Skip this thread and continue
-                    break;
-                }
-            }
-            
-            // If we found thread start addresses, calculate base address
-            if (lowestStartAddress != 0xFFFFFFFFFFFFFFFFULL && threadCount > 0) {
-                // Align down to 64KB boundary (typical module alignment)
-                UINT64 potentialBase = lowestStartAddress & ~0xFFFFULL;
-                
-                // Attach to process context to read memory
-                KAPC_STATE apcState;
-                KeStackAttachProcess(targetProcess, &apcState);
-                
-                __try {
-                    // Try a few aligned addresses around the lowest start address
-                    for (INT32 i = 0; i >= -16; i--) {
-                        UINT64 testBase = potentialBase + (i * 0x10000);
-                        
-                        // Validate address range
-                        if (testBase < 0x0000000000010000ULL || 
-                            testBase >= 0x00007FFFFFFFFFFFULL) {
-                            continue;
-                        }
-                        
-                        // Check if memory is accessible
-                        if (MmIsAddressValid((PVOID)testBase)) {
-                            __try {
-                                // Check for MZ header
-                                UINT16 mzHeader = *(UINT16*)testBase;
-                                
-                                if (mzHeader == 0x5A4D) {  // 'MZ'
-                                    // Verify PE header
-                                    UINT32 peOffset = *(UINT32*)(testBase + 0x3C);
-                                    
-                                    if (peOffset < 0x1000) {  // Reasonable PE offset
-                                        UINT64 peAddress = testBase + peOffset;
-                                        
-                                        if (MmIsAddressValid((PVOID)peAddress)) {
-                                            UINT32 peSignature = *(UINT32*)peAddress;
-                                            
-                                            if (peSignature == 0x00004550) {  // 'PE\0\0'
-                                                foundBase = (PVOID)testBase;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            __except (EXCEPTION_EXECUTE_HANDLER) {
-                                continue;
-                            }
-                        }
-                    }
-                }
-                __except (EXCEPTION_EXECUTE_HANDLER) {
-                    foundBase = NULL;
-                }
-                
-                KeUnstackDetachProcess(&apcState);
-            }
-            
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER) {
-            foundBase = NULL;
-        }
+        UINT64 foundBase = FindBaseAddressPhysical(targetProcess);
         
         ObDereferenceObject(targetProcess);
         
-        if (foundBase != NULL) {
-            packet->ModuleBase = (UINT64)foundBase;
+        if (foundBase != 0) {
+            packet->ModuleBase = foundBase;
             packet->Status = 0; // SUCCESS
             return STATUS_SUCCESS;
         }
         
-        // Return specific error codes
-        if (threadCount == 0) {
-            packet->Status = 0xDEAD0006; // KERN_BASE_FAIL: No threads found
-        } else if (lowestStartAddress == 0xFFFFFFFFFFFFFFFFULL) {
-            packet->Status = 0xDEAD0007; // KERN_BASE_FAIL: No valid start addresses
-        } else {
-            packet->Status = 0xDEAD0008; // KERN_BASE_FAIL: No MZ header found
-        }
-        
+        // Physical scan failed
+        packet->Status = 0xDEAD000A; // KERN_BASE_FAIL: Physical scan failed
         packet->ModuleBase = 0;
         return STATUS_NOT_FOUND;
         
@@ -483,6 +357,30 @@ static FORCEINLINE NTSTATUS HandleMirrorMemory(PMUTATED_PACKET packet) {
     }
 }
 
+// Ghost process (DKOM + SSDT hook)
+static FORCEINLINE NTSTATUS HandleGhostProcess(PMUTATED_PACKET packet) {
+    __try {
+        // Set hidden process ID for SSDT hook
+        g_HiddenProcessId = packet->ProcessId;
+        
+        // Apply DKOM techniques
+        NTSTATUS status = GhostProcess(packet->ProcessId);
+        
+        if (!NT_SUCCESS(status)) {
+            packet->Status = 1; // FAILED
+            return status;
+        }
+        
+        packet->Status = 0; // SUCCESS
+        return STATUS_SUCCESS;
+        
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        packet->Status = 1;
+        return STATUS_UNHANDLED_EXCEPTION;
+    }
+}
+
 /*
  * ═══════════════════════════════════════════════════════════════════════════
  * PACKET HANDLER
@@ -530,6 +428,10 @@ static FORCEINLINE NTSTATUS HandleMutatedPacket(PMUTATED_PACKET packet) {
             case CMD_MIRROR_MEMORY:
                 // Handle mirror memory
                 return HandleMirrorMemory(packet);
+                
+            case CMD_GHOST_PROCESS:
+                // Handle process ghosting
+                return HandleGhostProcess(packet);
                 
             default:
                 return STATUS_NOT_SUPPORTED;

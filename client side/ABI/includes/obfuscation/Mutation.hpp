@@ -247,7 +247,8 @@ public:
         CMD_GET_MODULE_BASE = 0x3000,
         CMD_VALIDATE_ADDRESS = 0x4000,
         CMD_HANDSHAKE = 0x5000,
-        CMD_MIRROR_MEMORY = 0x6000
+        CMD_MIRROR_MEMORY = 0x6000,
+        CMD_GHOST_PROCESS = 0x7000
     };
     
     // Generate dynamic command IDs
@@ -257,6 +258,7 @@ public:
     static uint32_t ValidateAddress() { return GenerateID(CMD_VALIDATE_ADDRESS); }
     static uint32_t Handshake() { return GenerateID(CMD_HANDSHAKE); }
     static uint32_t MirrorMemory() { return GenerateID(CMD_MIRROR_MEMORY); }
+    static uint32_t GhostProcess() { return GenerateID(CMD_GHOST_PROCESS); }
     
     // Get current timestamp (for driver synchronization)
     static uint64_t GetCurrentTimestamp() { return GetTimestamp(); }

