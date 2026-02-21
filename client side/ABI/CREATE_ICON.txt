@@ -1,0 +1,40 @@
+================================================================================
+  REALTEK ICON CREATION INSTRUCTIONS
+================================================================================
+
+To complete the identity spoof, you need a Realtek-style icon.
+
+OPTION 1: Extract from Real Realtek Driver (Recommended)
+  1. Find a legitimate Realtek audio driver on your system:
+     C:\Windows\System32\drivers\RTKVHD64.sys
+     C:\Program Files\Realtek\Audio\HDA\RtkAudioService64.exe
+  
+  2. Use Resource Hacker to extract the icon:
+     - Open Resource Hacker
+     - File → Open → Select Realtek file
+     - Icon Group → Right-click → Save
+     - Save as "realtek_icon.ico"
+  
+  3. Copy to both locations:
+     - client side/ABI/realtek_icon.ico
+     - Driver/realtek_icon.ico
+
+OPTION 2: Download Realtek Icon
+  1. Search for "Realtek icon" online
+  2. Download a 256x256 or 128x128 icon
+  3. Convert to .ico format using online converter
+  4. Save as "realtek_icon.ico"
+  5. Copy to both locations
+
+OPTION 3: Create Simple Icon (Fallback)
+  1. Create a simple audio-themed icon (speaker/headphone)
+  2. Use orange/red color scheme (Realtek brand colors)
+  3. Convert to .ico format
+  4. Save as "realtek_icon.ico"
+
+TEMPORARY SOLUTION:
+  If you don't have an icon yet, the build will still work.
+  The .rc file will compile without the icon, but you'll get a warning.
+  Add the icon later for complete authenticity.
+
+================================================================================
