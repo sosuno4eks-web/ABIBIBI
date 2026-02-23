@@ -1,0 +1,600 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="localhost|Win32">
+      <Configuration>localhost</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="localhost|x64">
+      <Configuration>localhost</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="production|Win32">
+      <Configuration>production</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="production|x64">
+      <Configuration>production</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="test|Win32">
+      <Configuration>test</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="test|x64">
+      <Configuration>test</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{c247ff23-d607-4f9b-9203-834275f0ade3}</ProjectGuid>
+    <RootNamespace>ExternalDLL</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <EnableFileFilter>true</EnableFileFilter>
+    <ProjectName>external</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='test|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='localhost|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='production|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='test|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='localhost|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='production|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='test|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='localhost|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='production|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='test|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='localhost|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='production|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='test|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='localhost|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='production|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='test|x64'">
+    <LinkIncremental />
+    <TargetName>calamari</TargetName>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>..\calamari-release\external\test\</OutDir>
+    <IntDir>..\calamari-bin\external\test\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='localhost|x64'">
+    <LinkIncremental />
+    <TargetName>calamari</TargetName>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>..\calamari-release\external\localhost\</OutDir>
+    <IntDir>..\calamari-bin\external\localhost\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='production|x64'">
+    <LinkIncremental />
+    <TargetName>calamari</TargetName>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>..\calamari-release\external\production\</OutDir>
+    <IntDir>..\calamari-bin\production\production\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgApplocalDeps>false</VcpkgApplocalDeps>
+    <VcpkgAutoLink>true</VcpkgAutoLink>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='test|x64'" Label="Vcpkg">
+    <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgTriplet>x64-windows-static-md</VcpkgTriplet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='localhost|x64'" Label="Vcpkg">
+    <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgTriplet>x64-windows-static-md</VcpkgTriplet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='production|x64'" Label="Vcpkg">
+    <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgTriplet>x64-windows-static-md</VcpkgTriplet>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='test|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;EXTERNALDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='localhost|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;EXTERNALDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='production|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;EXTERNALDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='test|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>TEST;PLAYER_START_INDEX=0;MONOAUTH_API_URL="https://monoauth.com/api";MELON_API_URL="https://melonapi.com/api";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <ControlFlowGuard>
+      </ControlFlowGuard>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <StringPooling>
+      </StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>
+      </RuntimeTypeInfo>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointExceptions>
+      </FloatingPointExceptions>
+      <CreateHotpatchableImage>
+      </CreateHotpatchableImage>
+      <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\;$(MSBuildProjectDirectory)\dependencies\additional\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <EnableUAC>true</EnableUAC>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <UACUIAccess>false</UACUIAccess>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;Crypt32.lib;Ws2_32.lib;Secur32.lib;Iphlpapi.lib;Advapi32.lib</AdditionalDependencies>
+      <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
+      <LargeAddressAware>
+      </LargeAddressAware>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\dependencies\additional\lib\</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <ForceFileOutput>
+      </ForceFileOutput>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='localhost|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>TEST;PLAYER_START_INDEX=0;MONOAUTH_API_URL="http://localhost:8080/api";MELON_API_URL="https://melonapi.com/api";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <ControlFlowGuard>
+      </ControlFlowGuard>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <StringPooling>
+      </StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>
+      </RuntimeTypeInfo>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointExceptions>
+      </FloatingPointExceptions>
+      <CreateHotpatchableImage>
+      </CreateHotpatchableImage>
+      <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\;$(MSBuildProjectDirectory)\dependencies\additional\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <EnableUAC>true</EnableUAC>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <UACUIAccess>false</UACUIAccess>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;Crypt32.lib;Ws2_32.lib;Secur32.lib;Iphlpapi.lib;Advapi32.lib</AdditionalDependencies>
+      <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
+      <LargeAddressAware>
+      </LargeAddressAware>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\dependencies\additional\lib\</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <ForceFileOutput>
+      </ForceFileOutput>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='production|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>PLAYER_START_INDEX=1;MONOAUTH_API_URL="https://monoauth.com/api";MELON_API_URL="https://melonapi.com/api";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <ControlFlowGuard>
+      </ControlFlowGuard>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>
+      </OmitFramePointers>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <StringPooling>
+      </StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>
+      </RuntimeTypeInfo>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointExceptions>
+      </FloatingPointExceptions>
+      <CreateHotpatchableImage>
+      </CreateHotpatchableImage>
+      <CompileAs>Default</CompileAs>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\;$(MSBuildProjectDirectory)\dependencies\additional\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableUAC>true</EnableUAC>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <UACUIAccess>false</UACUIAccess>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;Crypt32.lib;Ws2_32.lib;Secur32.lib;Iphlpapi.lib;Advapi32.lib</AdditionalDependencies>
+      <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
+      <LargeAddressAware>
+      </LargeAddressAware>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\dependencies\additional\lib\</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <ForceFileOutput>
+      </ForceFileOutput>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_freetype.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="dependencies\zydis\zydis.cpp" />
+    <ClCompile Include="impl\game\env\base_projectile\base_projectile.cpp" />
+    <ClCompile Include="impl\game\env\env.cpp" />
+    <ClCompile Include="impl\game\players\players.cpp" />
+    <ClCompile Include="impl\menu\menu.cpp" />
+    <ClCompile Include="impl\vars\color\color.cpp" />
+    <ClCompile Include="impl\vars\option\option.cpp" />
+    <ClCompile Include="impl\visuals\on_screen\on_screen.cpp" />
+    <ClCompile Include="impl\visuals\world\world.cpp" />
+    <ClCompile Include="workspace\backend\elements\logging\logging.cpp" />
+    <ClCompile Include="workspace\backend\elements\utility\utility.cpp" />
+    <ClCompile Include="workspace\backend\internal\cryptopp\cryptopp.cpp" />
+    <ClCompile Include="workspace\backend\internal\monoauth\monoauth.cpp" />
+    <ClCompile Include="workspace\drawing\fonts\fonts.cpp" />
+    <ClCompile Include="workspace\drawing\menu\childs\child_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\colors\color_picker.cpp" />
+    <ClCompile Include="workspace\drawing\menu\components\component_builder.cpp" />
+    <ClCompile Include="workspace\drawing\menu\help\help_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\pop ups\popup_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\search\search_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\tabs\tabs_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\tooltips\tooltip_manager.cpp" />
+    <ClCompile Include="workspace\drawing\menu\widgets\widgets_manager.cpp" />
+    <ClCompile Include="workspace\drawing\textures\textures.cpp" />
+    <ClCompile Include="impl\visuals\players\entities.cpp" />
+    <ClCompile Include="workspace\drawing\sprites\sprites.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_demo.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="dependencies\additional\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="workspace\drawing\framework\framework.cpp" />
+    <ClCompile Include="entrypoint.cpp" />
+    <ClCompile Include="impl\render\render.cpp" />
+    <ClCompile Include="impl\vars\vars.cpp" />
+    <ClCompile Include="workspace\facepunch\core\math\vector.cpp" />
+    <ClCompile Include="workspace\facepunch\core\structs\objects.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dependencies\additional\include\ime\ime.hpp" />
+    <ClInclude Include="dependencies\additional\include\imgui\imgui_freetype.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="dependencies\awaken\control.h" />
+    <ClInclude Include="dependencies\awaken\driver.hxx" />
+    <ClInclude Include="dependencies\awaken\ia32.h" />
+    <ClInclude Include="dependencies\binaries\bobi.hpp" />
+    <ClInclude Include="dependencies\binaries\unicodes.hpp" />
+    <ClInclude Include="dependencies\zydis\zydis.hpp" />
+    <ClInclude Include="impl\game\enviroment\ray\embree.hpp" />
+    <ClInclude Include="impl\game\enviroment\ray\sdk\bvh.hpp" />
+    <ClInclude Include="impl\game\enviroment\ray\sdk\physx.hpp" />
+    <ClInclude Include="impl\game\enviroment\ray\trace\trace.hpp" />
+    <ClInclude Include="impl\game\env\env.hpp" />
+    <ClInclude Include="impl\game\players\players.hpp" />
+    <ClInclude Include="impl\menu\menu.hpp" />
+    <ClInclude Include="impl\vars\color\color.hpp" />
+    <ClInclude Include="impl\vars\option\option.hpp" />
+    <ClInclude Include="impl\vcruntimes\constant.hpp" />
+    <ClInclude Include="impl\vcruntimes\hexrays.hpp" />
+    <ClInclude Include="impl\vcruntimes\lazy_import.hpp" />
+    <ClInclude Include="workspace\backend\elements\logging\logging.hpp" />
+    <ClInclude Include="workspace\backend\elements\utility\utility.hpp" />
+    <ClInclude Include="workspace\backend\internal\cryptopp\cryptopp.hpp" />
+    <ClInclude Include="workspace\backend\internal\monoauth\monoauth.hpp" />
+    <ClInclude Include="workspace\drawing\fonts\fonts.hpp" />
+    <ClInclude Include="workspace\drawing\menu\animations\animations.hpp" />
+    <ClInclude Include="workspace\drawing\menu\childs\child_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\colors\color_picker.hpp" />
+    <ClInclude Include="workspace\drawing\menu\components\component_builder.hpp" />
+    <ClInclude Include="workspace\drawing\menu\help\help_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\language\language_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\pop ups\popup_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\search\search_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\styles\style_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\tabs\tabs_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\tooltips\tooltip_manager.hpp" />
+    <ClInclude Include="workspace\drawing\menu\widgets\widgets_manager.hpp" />
+    <ClInclude Include="workspace\facepunch\core\structs\objects.hpp" />
+    <ClInclude Include="workspace\drawing\textures\textures.hpp" />
+    <ClInclude Include="workspace\drawing\sprites\sprites.hpp" />
+    <ClInclude Include="dependencies\binaries\fonts.hpp" />
+    <ClInclude Include="dependencies\additional\include\imgui\imconfig.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imgui.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imgui_internal.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imstb_textedit.h" />
+    <ClInclude Include="dependencies\additional\include\imgui\imstb_truetype.h" />
+    <ClInclude Include="workspace\facepunch\core\enums\enums.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk.hpp" />
+    <ClInclude Include="workspace\drawing\framework\framework.hpp" />
+    <ClInclude Include="impl\visuals\visuals.hpp" />
+    <ClInclude Include="impl\Draw.hpp" />
+    <ClInclude Include="impl\render\render.hpp" />
+    <ClInclude Include="impl\includes.hpp" />
+    <ClInclude Include="impl\Overlay.hpp" />
+    <ClInclude Include="impl\vars\vars.hpp" />
+    <ClInclude Include="workspace\facepunch\core\math\vector.hpp" />
+    <ClInclude Include="impl\vcruntimes\hash.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\base_class.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\base_combat_entity.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\base_mono_behaviour.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\base_networkable.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\base_player.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\camera.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\facepunch_behaviour.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\main_camera.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\game\rust_camera.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\il2cpp\klass.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\il2cpp\object.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\array.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\buffer_list.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\dictionary.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\hash_set.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\list.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\list_component.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\list_dictionary.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\list_hash_set.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\nullable.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\singleton_component.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\stack.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\string.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\system\t_object.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\behaviour.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\bounds.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\component.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\dynamic_array.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\dynamic_list.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\game_object.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\mono_behaviour.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\native_array.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\object.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\text.hpp" />
+    <ClInclude Include="workspace\facepunch\sdk\unity\ui_behaviour.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="dependencies\kernel\vortex.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="dependencies\vortex.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+  </Target>
+</Project>
