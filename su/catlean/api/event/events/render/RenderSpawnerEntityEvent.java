@@ -1,0 +1,12 @@
+package su.catlean.api.event.events.render;
+
+import org.jetbrains.annotations.NotNull;
+import su.catlean.api.event.Event;
+
+public final class RenderSpawnerEntityEvent extends Event {
+   @NotNull
+   public static final RenderSpawnerEntityEvent INSTANCE = new RenderSpawnerEntityEvent();
+
+   private RenderSpawnerEntityEvent() {
+   }
+}

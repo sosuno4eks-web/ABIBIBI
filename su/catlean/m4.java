@@ -1,0 +1,19 @@
+package su.catlean;
+
+import kotlin.jvm.internal.DefaultConstructorMarker;
+import kotlinx.serialization.KSerializer;
+import org.jetbrains.annotations.NotNull;
+
+public final class m4 {
+   private m4() {
+   }
+
+   @NotNull
+   public final KSerializer X() {
+      return (KSerializer)cv.c;
+   }
+
+   public m4(DefaultConstructorMarker $constructor_marker) {
+      this();
+   }
+}

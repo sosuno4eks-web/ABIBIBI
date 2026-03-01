@@ -1,0 +1,43 @@
+package kotlin.coroutines.intrinsics;
+
+import kotlin.ResultKt;
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.jvm.internal.RestrictedContinuationImpl;
+import kotlin.jvm.functions.Function1;
+import kotlin.jvm.internal.Intrinsics;
+import kotlin.jvm.internal.TypeIntrinsics;
+
+public final class IntrinsicsKt__IntrinsicsJvmKt$createCoroutineUnintercepted$$inlined$createCoroutineFromSuspendFunction$IntrinsicsKt__IntrinsicsJvmKt$1 extends RestrictedContinuationImpl {
+   private int label;
+   // $FF: synthetic field
+   final Function1 $this_createCoroutineUnintercepted$inlined;
+
+   public IntrinsicsKt__IntrinsicsJvmKt$createCoroutineUnintercepted$$inlined$createCoroutineFromSuspendFunction$IntrinsicsKt__IntrinsicsJvmKt$1(Continuation $completion, Function1 var2) {
+      this.$this_createCoroutineUnintercepted$inlined = var2;
+      Intrinsics.checkNotNull($completion, "null cannot be cast to non-null type kotlin.coroutines.Continuation<kotlin.Any?>");
+      super($completion);
+   }
+
+   protected Object invokeSuspend(Object result) {
+      Object var10000;
+      switch(this.label) {
+      case 0:
+         this.label = 1;
+         ResultKt.throwOnFailure(result);
+         Continuation it = (Continuation)this;
+         int var3 = false;
+         Intrinsics.checkNotNull(this.$this_createCoroutineUnintercepted$inlined, "null cannot be cast to non-null type kotlin.Function1<kotlin.coroutines.Continuation<T of kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted>, kotlin.Any?>");
+         var10000 = ((Function1)TypeIntrinsics.beforeCheckcastToFunctionOfArity(this.$this_createCoroutineUnintercepted$inlined, 1)).invoke(it);
+         break;
+      case 1:
+         this.label = 2;
+         ResultKt.throwOnFailure(result);
+         var10000 = result;
+         break;
+      default:
+         throw new IllegalStateException("This coroutine had already completed".toString());
+      }
+
+      return var10000;
+   }
+}

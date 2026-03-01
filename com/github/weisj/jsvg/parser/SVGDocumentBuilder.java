@@ -1,0 +1,193 @@
+package com.github.weisj.jsvg.parser;
+
+import com.github.weisj.jsvg.SVGDocument;
+import com.github.weisj.jsvg.attributes.AttributeParser;
+import com.github.weisj.jsvg.nodes.SVG;
+import com.github.weisj.jsvg.nodes.SVGNode;
+import com.github.weisj.jsvg.nodes.Style;
+import com.github.weisj.jsvg.nodes.Use;
+import com.github.weisj.jsvg.nodes.container.CommonRenderableContainerNode;
+import com.github.weisj.jsvg.parser.css.CssParser;
+import com.github.weisj.jsvg.parser.css.StyleSheet;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+
+public final class SVGDocumentBuilder {
+   private static final int MAX_USE_NESTING_DEPTH = 15;
+   private final Map<String, Object> namedElements = new HashMap();
+   private final List<Use> useElements = new ArrayList();
+   private final List<Style> styleElements = new ArrayList();
+   private final List<StyleSheet> styleSheets = new ArrayList();
+   private final Deque<ParsedElement> currentNodeStack = new ArrayDeque();
+   @NotNull
+   private final ParserProvider parserProvider;
+   @NotNull
+   private final LoadHelper loadHelper;
+   @NotNull
+   private final NodeSupplier nodeSupplier;
+   private ParsedElement rootNode;
+
+   public SVGDocumentBuilder(@NotNull ParserProvider parserProvider, @NotNull ResourceLoader resourceLoader, @NotNull NodeSupplier nodeSupplier) {
+      this.parserProvider = parserProvider;
+      this.loadHelper = new LoadHelper(new AttributeParser(parserProvider.createPaintParser()), resourceLoader);
+      this.nodeSupplier = nodeSupplier;
+   }
+
+   public void startDocument() {
+      if (this.rootNode != null) {
+         throw new IllegalStateException("Document already started");
+      }
+   }
+
+   public void endDocument() {
+      if (this.rootNode == null) {
+         throw new IllegalStateException("Document is empty");
+      }
+   }
+
+   public boolean startElement(@NotNull String tagName, @NotNull Map<String, String> attributes) {
+      ParsedElement parentElement = !this.currentNodeStack.isEmpty() ? (ParsedElement)this.currentNodeStack.peek() : null;
+      AttributeNode parentAttributeNode = parentElement != null ? parentElement.attributeNode() : null;
+      if (parentElement != null) {
+         this.flushText(parentElement, true);
+      }
+
+      SVGNode newNode = this.nodeSupplier.create(tagName);
+      if (newNode == null) {
+         return false;
+      } else {
+         AttributeNode attributeNode = new AttributeNode(tagName, attributes, parentAttributeNode, this.namedElements, this.styleSheets, this.loadHelper);
+         String id = (String)attributes.get("id");
+         ParsedElement parsedElement = new ParsedElement(id, attributeNode, newNode);
+         if (id != null && !this.namedElements.containsKey(id)) {
+            this.namedElements.put(id, parsedElement);
+         }
+
+         if (parentElement != null) {
+            parentElement.addChild(parsedElement);
+         }
+
+         if (this.rootNode == null) {
+            this.rootNode = parsedElement;
+         }
+
+         if (parsedElement.node() instanceof Style) {
+            this.styleElements.add((Style)parsedElement.node());
+         }
+
+         if (parsedElement.node() instanceof Use) {
+            this.useElements.add((Use)parsedElement.node());
+         }
+
+         this.currentNodeStack.push(parsedElement);
+         return true;
+      }
+   }
+
+   public void addTextContent(@NotNull char[] characterData, int startOffset, int endOffset) {
+      if (this.currentNodeStack.isEmpty()) {
+         throw new IllegalStateException("Adding text content without a current node");
+      } else {
+         ParsedElement currentElement = (ParsedElement)this.currentNodeStack.peek();
+         if (currentElement.characterDataParser != null) {
+            currentElement.characterDataParser.append(characterData, startOffset, endOffset);
+         }
+      }
+   }
+
+   public void endElement(@NotNull String tagName) {
+      if (this.currentNodeStack.isEmpty()) {
+         throw new IllegalStateException("No current node to end");
+      } else {
+         ParsedElement currentElement = (ParsedElement)this.currentNodeStack.pop();
+         String currentNodeTagName = currentElement.attributeNode().tagName();
+         if (!currentNodeTagName.equals(tagName)) {
+            throw new IllegalStateException(String.format("Closing tag %s doesn't match current node %s)", tagName, currentNodeTagName));
+         } else {
+            this.flushText(currentElement, false);
+         }
+      }
+   }
+
+   private void flushText(@NotNull ParsedElement element, boolean segmentBreak) {
+      if (element.characterDataParser != null && element.characterDataParser.canFlush(segmentBreak)) {
+         element.node().addContent(element.characterDataParser.flush(segmentBreak));
+      }
+
+   }
+
+   @NotNull
+   public SVGDocument build() {
+      if (this.rootNode == null) {
+         throw new IllegalStateException("No root node");
+      } else {
+         this.processStyleSheets();
+         DomProcessor preProcessor = this.parserProvider.createPreProcessor();
+         if (preProcessor != null) {
+            preProcessor.process(this.rootNode);
+         }
+
+         this.rootNode.build();
+         DomProcessor postProcessor = this.parserProvider.createPostProcessor();
+         if (postProcessor != null) {
+            postProcessor.process(this.rootNode);
+         }
+
+         this.validateUseElements();
+         return new SVGDocument((SVG)this.rootNode.node());
+      }
+   }
+
+   private void processStyleSheets() {
+      if (!this.styleElements.isEmpty()) {
+         CssParser cssParser = this.parserProvider.createCssParser();
+         Iterator var2 = this.styleElements.iterator();
+
+         while(var2.hasNext()) {
+            Style styleElement = (Style)var2.next();
+            styleElement.parseStyleSheet(cssParser);
+            this.styleSheets.add(styleElement.styleSheet());
+         }
+
+      }
+   }
+
+   private void validateUseElements() {
+      if (!this.useElements.isEmpty()) {
+         Iterator var1 = this.useElements.iterator();
+
+         while(var1.hasNext()) {
+            Use useElement = (Use)var1.next();
+            this.checkNestingDepth(useElement, 15);
+         }
+
+      }
+   }
+
+   private void checkNestingDepth(@NotNull SVGNode node, int allowed_depth) {
+      if (allowed_depth <= 0) {
+         throw new IllegalStateException("Maximum nesting depth exceeded");
+      } else {
+         if (node instanceof Use) {
+            SVGNode referenced = ((Use)node).referencedNode();
+            if (referenced != null) {
+               this.checkNestingDepth(referenced, allowed_depth - 1);
+            }
+         } else if (node instanceof CommonRenderableContainerNode) {
+            Iterator var5 = ((CommonRenderableContainerNode)node).children().iterator();
+
+            while(var5.hasNext()) {
+               SVGNode child = (SVGNode)var5.next();
+               this.checkNestingDepth(child, allowed_depth);
+            }
+         }
+
+      }
+   }
+}

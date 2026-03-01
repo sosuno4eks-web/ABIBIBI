@@ -1,0 +1,16 @@
+package su.catlean;
+
+import java.util.Comparator;
+import kotlin.comparisons.ComparisonsKt;
+
+public final class uq implements Comparator {
+   public final int compare(Object a, Object b) {
+      Enum var3 = (Enum)var1;
+      boolean var4 = false;
+      Comparable var10000 = (Comparable)var3.name().length();
+      var3 = (Enum)var2;
+      Comparable var5 = var10000;
+      var4 = false;
+      return ComparisonsKt.compareValues(var5, (Comparable)var3.name().length());
+   }
+}
