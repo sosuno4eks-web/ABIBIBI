@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "levkindlc",
+  "version": "1.0",
+  "name": "Levkin DLC",
+  "description": "Levkin DLC Mod",
+  "authors": [
+    "Levkin"
+  ],
+  "contact": {
+    "homepage": "",
+    "issues": ""
+  },
+  "license": "Все права защищены!",
+  "icon": "assets/noxium/noxium.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "ru.noxium.Noxium"
+    ]
+  },
+  "mixins": [
+    "noxium.mixins.json"
+  ],
+  "accessWidener": "noxium.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "minecraft": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+      }
+    }
+  }
+}
