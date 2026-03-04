@@ -44,18 +44,19 @@ public class RotationUtils {
     }
     
     /**
-     * Apply smooth aim rotation towards a target entity with exponential smoothing
-     * and ease-out deceleration for natural, fluid mouse-like movement
+     * Apply smooth aim rotation with kinetic smoothing and exponential decay
+     * for natural, fluid mouse-like movement without jitter or steps
      * 
      * @param target The entity to aim at
-     * @param smooth Smoothing factor (0.05 = very smooth, 0.12 = aggressive)
-     * @param maxTurnSpeed Maximum degrees per tick (4.0 = legit, 10.0 = fast)
+     * @param smooth Smoothing factor (0.5 = very smooth, 3.0 = responsive)
+     * @param maxTurnSpeed Maximum degrees per tick (2.0 = legit, 15.0 = fast)
      */
     public static void applySmoothAim(Entity target, float smooth, float maxTurnSpeed) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
         
-        // Sub-tick Precision: Get tick delta for buttery smooth frame-by-frame rotation
+        // Sub-Frame Interpolation: Get tick delta to sync with monitor refresh rate
+        // This is CRITICAL to eliminate steps and make movement fluid
         float tickDelta = client.getRenderTickCounter().getTickProgress(true);
         
         // Calculate target rotations using lerped position (eliminates micro-stutter)
@@ -67,41 +68,36 @@ public class RotationUtils {
         float targetYaw = rotations[0];
         float targetPitch = rotations[1];
         
-        // No Snap: Use wrapDegrees to find shortest path (prevents 360-degree spins)
+        // Shortest Path Logic: Use wrapDegrees to prevent 360-degree glitches
+        // This ensures we ALWAYS take the shortest path
         float yawDiff = MathHelper.wrapDegrees(targetYaw - currentYaw);
         float pitchDiff = MathHelper.wrapDegrees(targetPitch - currentPitch);
         
-        // Calculate distance to target for ease-out
-        float totalDistance = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
+        // Weighted Smoothing: Exponential decay formula for kinetic movement
+        // Formula: currentAngle += (targetAngle - currentAngle) * (1 - smoothness^delta)
+        // This creates fast start with soft slowdown at the end
+        float smoothFactor = (float) (1.0 - Math.pow(0.95, smooth * tickDelta * 60.0));
         
-        // Acceleration/Deceleration: Ease-out when close to target
-        // This makes the movement feel 'heavy' and 'fluid', not robotic
-        float easeOutFactor = 1.0F;
-        if (totalDistance < 5.0F) {
-            // Smooth deceleration as we approach target (quadratic ease-out)
-            easeOutFactor = totalDistance / 5.0F;
-            easeOutFactor = 1.0F - (1.0F - easeOutFactor) * (1.0F - easeOutFactor);
-        }
+        // Calculate the change for this frame using exponential decay
+        float yawChange = yawDiff * smoothFactor;
+        float pitchChange = pitchDiff * smoothFactor;
         
-        // Exponential Smoothing: Apply smoothing factor for natural interpolation
-        // Lower values = more 'weight' and 'drag', higher = more responsive
-        float effectiveSmooth = smooth * 0.05F * easeOutFactor;
+        // Velocity Clamping: Limit max degrees-per-frame scaled by frame time
+        // This keeps movement consistent across different FPS
+        float maxStepPerFrame = maxTurnSpeed * tickDelta;
         
-        // Mouse Sensitivity Weight: Calculate fractional movement
-        // This ensures we don't teleport, but gradually move towards target
-        float yawChange = yawDiff * effectiveSmooth;
-        float pitchChange = pitchDiff * effectiveSmooth;
+        // Clamp the change to prevent sudden snaps
+        yawChange = MathHelper.clamp(yawChange, -maxStepPerFrame, maxStepPerFrame);
+        pitchChange = MathHelper.clamp(pitchChange, -maxStepPerFrame, maxStepPerFrame);
         
-        // Clamp to maximum turn speed (prevents snapping on large angles)
-        float maxStep = maxTurnSpeed * tickDelta;
-        yawChange = MathHelper.clamp(yawChange, -maxStep, maxStep);
-        pitchChange = MathHelper.clamp(pitchChange, -maxStep, maxStep);
-        
-        // Apply the fractional change (not absolute target)
+        // No Direct Snap: Apply the smoothed change (never set to target directly)
         float newYaw = currentYaw + yawChange;
         float newPitch = currentPitch + pitchChange;
         
-        // Clamp pitch to valid range
+        // Wrap the final angles to keep them in valid range
+        newYaw = MathHelper.wrapDegrees(newYaw);
+        
+        // Clamp pitch to valid range (-90 to 90)
         newPitch = MathHelper.clamp(newPitch, -90.0F, 90.0F);
         
         // Apply rotation to player
