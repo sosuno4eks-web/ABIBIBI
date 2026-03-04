@@ -18,6 +18,7 @@ import ru.noxium.module.api.setting.Setting;
 import ru.noxium.module.api.setting.impl.BooleanSetting;
 import ru.noxium.module.api.setting.impl.SliderSetting;
 import ru.noxium.util.render.core.Renderer2D;
+import ru.noxium.util.player.RotationUtils;
 
 @IModule(
    name = "Aim Assist",
@@ -29,7 +30,8 @@ import ru.noxium.util.render.core.Renderer2D;
 public class AimAssist extends Module {
    
    // Settings
-   public SliderSetting smoothness = new SliderSetting("Smoothness", 0.3F, 0.1F, 1.0F, 0.05F, false);
+   public SliderSetting smoothness = new SliderSetting("Smoothness", 0.08F, 0.05F, 0.15F, 0.01F, false);
+   public SliderSetting speed = new SliderSetting("Speed", 6.0F, 2.0F, 12.0F, 0.5F, false);
    public SliderSetting range = new SliderSetting("Range", 5.0F, 3.0F, 10.0F, 0.5F, false);
    public SliderSetting fov = new SliderSetting("FOV", 90.0F, 30.0F, 180.0F, 5.0F, false);
    public BooleanSetting showFOV = new BooleanSetting("Show FOV", true);
@@ -38,7 +40,7 @@ public class AimAssist extends Module {
    public static PlayerEntity target = null; // Public for other modules
 
    public AimAssist() {
-      this.addSettings(new Setting[]{smoothness, range, fov, showFOV, filled});
+      this.addSettings(new Setting[]{smoothness, speed, range, fov, showFOV, filled});
    }
 
    @EventInit
@@ -55,8 +57,8 @@ public class AimAssist extends Module {
          return;
       }
       
-      // Apply smooth rotation
-      applyRotation();
+      // Apply smooth rotation using RotationUtils
+      RotationUtils.applySmoothAim(target, smoothness.get(), speed.get());
    }
    
    /**
@@ -102,60 +104,6 @@ public class AimAssist extends Module {
       }
       
       return bestTarget;
-   }
-   
-   /**
-    * Apply smooth interpolated rotation towards target
-    */
-   private void applyRotation() {
-      if (target == null) return;
-      
-      // Calculate target angles
-      Vec3d eyePos = mc.player.getEyePos();
-      Vec3d targetPos = new Vec3d(target.getX(), target.getY() + target.getHeight() * 0.5, target.getZ());
-      Vec3d direction = targetPos.subtract(eyePos);
-      
-      // Calculate yaw and pitch to target
-      float targetYaw = (float) Math.toDegrees(Math.atan2(-direction.x, direction.z));
-      float targetPitch = (float) -Math.toDegrees(Math.atan2(direction.y, Math.sqrt(direction.x * direction.x + direction.z * direction.z)));
-      
-      // Get current angles
-      float currentYaw = mc.player.getYaw();
-      float currentPitch = mc.player.getPitch();
-      
-      // Calculate differences using wrapDegrees to find shortest path
-      float yawDiff = wrapDegrees(targetYaw - currentYaw);
-      float pitchDiff = targetPitch - currentPitch;
-      
-      // Deadzone: Stop if already very close to prevent micro-jitter
-      if (Math.abs(yawDiff) < 0.5F && Math.abs(pitchDiff) < 0.5F) {
-         return;
-      }
-      
-      // Smooth interpolation (lerp) - lower value = smoother
-      // smoothness setting: 0.1 to 1.0 maps to 0.08 to 0.2 smoothing factor
-      float smoothingFactor = smoothness.get() * 0.2F;
-      
-      // Apply smooth rotation
-      float newYaw = currentYaw + yawDiff * smoothingFactor;
-      float newPitch = currentPitch + pitchDiff * smoothingFactor;
-      
-      // Clamp pitch to valid range
-      newPitch = MathHelper.clamp(newPitch, -90.0F, 90.0F);
-      
-      // Apply rotation to player
-      mc.player.setYaw(newYaw);
-      mc.player.setPitch(newPitch);
-   }
-   
-   /**
-    * Wrap degrees to -180 to 180 range
-    */
-   private float wrapDegrees(float degrees) {
-      degrees = degrees % 360.0F;
-      if (degrees >= 180.0F) degrees -= 360.0F;
-      if (degrees < -180.0F) degrees += 360.0F;
-      return degrees;
    }
    
    @Override
