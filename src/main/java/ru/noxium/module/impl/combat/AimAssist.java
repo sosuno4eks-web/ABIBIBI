@@ -30,8 +30,8 @@ import ru.noxium.util.player.RotationUtils;
 public class AimAssist extends Module {
    
    // Settings
-   public SliderSetting smoothness = new SliderSetting("Smoothness", 0.08F, 0.05F, 0.15F, 0.01F, false);
-   public SliderSetting speed = new SliderSetting("Speed", 6.0F, 2.0F, 12.0F, 0.5F, false);
+   public SliderSetting smoothness = new SliderSetting("Smoothness", 1.0F, 0.5F, 3.0F, 0.1F, false);
+   public SliderSetting speed = new SliderSetting("Speed", 8.0F, 2.0F, 15.0F, 0.5F, false);
    public SliderSetting range = new SliderSetting("Range", 5.0F, 3.0F, 10.0F, 0.5F, false);
    public SliderSetting fov = new SliderSetting("FOV", 90.0F, 30.0F, 180.0F, 5.0F, false);
    public BooleanSetting showFOV = new BooleanSetting("Show FOV", true);
