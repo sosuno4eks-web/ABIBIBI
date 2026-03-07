@@ -29,6 +29,7 @@ import ru.noxium.util.player.MovementManager;
 @IModule(name = "Auto Totem", description = "Жозки авто свин", category = Category.Combat, bind = -1)
 @Environment(EnvType.CLIENT)
 public class AutoTotem extends Module {
+   
    private final MultiBooleanSetting options = new MultiBooleanSetting(
          "Настройки",
          new BooleanSetting("Здоровье с элитрами", true),

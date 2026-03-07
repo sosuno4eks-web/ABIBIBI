@@ -55,8 +55,7 @@ public class EventManager {
             });
          }
 
-         System.out
-            .println("[EventManager] Registered: " + object.getClass().getSimpleName() + "." + method.getName() + "(" + indexClass.getSimpleName() + ")");
+         System.out.println("[EventManager] Registered: " + object.getClass().getSimpleName() + "." + method.getName() + "(" + indexClass.getSimpleName() + ")");
       } catch (Exception var4) {
          System.err.println("Failed to register event handler: " + method.getName() + " in " + object.getClass().getName());
          var4.printStackTrace();
@@ -122,26 +121,10 @@ public class EventManager {
       try {
          data.getTarget().invoke(data.getSource(), argument);
       } catch (IllegalArgumentException | IllegalAccessException var4) {
-         System.err
-            .println(
-               "[EventManager] Failed to invoke "
-                  + data.getTarget().getName()
-                  + " on "
-                  + data.getSource().getClass().getSimpleName()
-                  + ": "
-                  + var4.getMessage()
-            );
+         System.err.println("[EventManager] Failed to invoke " + data.getTarget().getName() + " on " + data.getSource().getClass().getSimpleName() + ": " + var4.getMessage());
       } catch (InvocationTargetException var5) {
          Throwable cause = var5.getCause();
-         System.err
-            .println(
-               "[EventManager] Exception in handler "
-                  + data.getTarget().getName()
-                  + " on "
-                  + data.getSource().getClass().getSimpleName()
-                  + ": "
-                  + (cause != null ? cause.getMessage() : var5.getMessage())
-            );
+         System.err.println("[EventManager] Exception in handler " + data.getTarget().getName() + " on " + data.getSource().getClass().getSimpleName() + ": " + (cause != null ? cause.getMessage() : var5.getMessage()));
          if (cause != null) {
             cause.printStackTrace();
          }

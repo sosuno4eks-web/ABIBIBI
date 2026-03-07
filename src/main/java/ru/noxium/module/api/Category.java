@@ -7,7 +7,6 @@ import ru.noxium.util.render.animation.util.Animation;
 @Environment(EnvType.CLIENT)
 public enum Category {
    Combat("Combat", "a"),
-   Movement("Movement", "c"),
    Visuals("Visuals", "e"),
    Player("Player", "g"),
    Misc("Misc", "h");

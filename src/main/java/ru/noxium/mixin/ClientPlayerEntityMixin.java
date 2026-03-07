@@ -22,7 +22,6 @@ import ru.noxium.event.player.EventMotion;
 import ru.noxium.event.player.SlowWalkingEvent;
 import ru.noxium.event.player.UsingItemEvent;
 import ru.noxium.module.impl.combat.auraProcess.rotationProcess.impl.FreeLookUtil;
-import ru.noxium.module.impl.player.NoPush;
 
 @Environment(EnvType.CLIENT)
 @Mixin({ ClientPlayerEntity.class })
@@ -65,12 +64,7 @@ public abstract class ClientPlayerEntityMixin {
    @Redirect(method = {
          "tickMovement" }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;pushOutOfBlocks(DD)V"))
    private void redirectPushOutOfBlocks(ClientPlayerEntity instance, double x, double z) {
-      if (Noxium.get != null && Noxium.get.manager != null) {
-         NoPush noPush = (NoPush) Noxium.get.manager.getModule(NoPush.class);
-         if (noPush != null && noPush.enable && noPush.blocks.get()) {
-            return;
-         }
-      }
+      // NoPush module removed - blocks push disabled by default
    }
 
    @Inject(method = { "tickMovement" }, at = { @At("HEAD") })

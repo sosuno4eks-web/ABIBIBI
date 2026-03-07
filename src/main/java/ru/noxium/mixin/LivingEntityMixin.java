@@ -23,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.noxium.Noxium;
 import ru.noxium.event.EventManager;
 import ru.noxium.event.player.EventJump;
-import ru.noxium.module.impl.player.NoDelay;
 import ru.noxium.module.impl.visuals.SwingAnimation;
 
 @Environment(EnvType.CLIENT)
@@ -90,16 +89,7 @@ public abstract class LivingEntityMixin {
 
    @ModifyConstant(method = { "tickMovement" }, constant = { @Constant(intValue = 10) })
    private int modifyJumpTicks(int original) {
-      LivingEntity self = (LivingEntity) (Object) this;
-      if (self instanceof ClientPlayerEntity) {
-         NoDelay noDelay = Noxium.get != null && Noxium.get.manager != null
-               ? (NoDelay) Noxium.get.manager.getModule(NoDelay.class)
-               : null;
-         if (noDelay != null && noDelay.enable && NoDelay.jump.get()) {
-            return (int) NoDelay.jumpDelay.get();
-         }
-      }
-
+      // NoDelay module removed - using default jump ticks
       return original;
    }
 }

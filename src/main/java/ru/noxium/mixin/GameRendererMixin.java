@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.noxium.Noxium;
+import ru.noxium.module.impl.movement.Freecam;
 import ru.noxium.module.impl.visuals.AspectRation;
 import ru.noxium.module.impl.visuals.CustomWorld;
 import ru.noxium.module.impl.visuals.HUD.InformationHUD;
@@ -103,6 +104,16 @@ public abstract class GameRendererMixin {
       private void onBobView(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
             if (Noxium.get.manager.getModule(NoRender.class).enable && NoRender.shake.get()) {
                   ci.cancel();
+            }
+      }
+
+      @Inject(method = { "shouldRenderBlockOutline" }, at = { @At("HEAD") }, cancellable = true)
+      private void onShouldRenderBlockOutline(CallbackInfoReturnable<Boolean> cir) {
+            if (Noxium.get != null && Noxium.get.manager != null) {
+                  Freecam freecam = Noxium.get.manager.get(Freecam.class);
+                  if (freecam != null && freecam.enable) {
+                        cir.setReturnValue(false);
+                  }
             }
       }
 }

@@ -95,8 +95,14 @@ public class WaterMark {
             String pingValue = "0";
             if (mc.getNetworkHandler() != null && mc.player != null) {
                   PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-                  if (entry != null)
-                        pingValue = String.valueOf(entry.getLatency());
+                  if (entry != null) {
+                        int latency = entry.getLatency();
+                        pingValue = String.valueOf(latency);
+                  }
+            }
+            // Fallback if ping is still "0" or empty in multiplayer
+            if (mc.getCurrentServerEntry() != null && "0".equals(pingValue)) {
+                  pingValue = "...";
             }
 
             String fpsValue = String.valueOf(mc.getCurrentFps());
@@ -117,7 +123,8 @@ public class WaterMark {
 
             // Measure widths of ALL potential elements
             Map<ElementType, Float> widths = new EnumMap<>(ElementType.class);
-            widths.put(ElementType.LOGO, headSize);
+            // Logo removed - was causing broken box
+            widths.put(ElementType.LOGO, 0.0F);
 
             float lIconW = r2.measureText(FontRegistry.ICONS, loginIcon, 32.0F).width;
             float lTextW = r2.measureText(FontRegistry.INTER_SEMIBOLD, playerName, 28.0F).width;
@@ -361,8 +368,9 @@ public class WaterMark {
 
                   switch (type) {
                         case LOGO:
-                              Identifier logo_id = Identifier.of("noxium", "textures/gui/logo.png");
-                              drawPlayerHead(r2, logo_id, cx, startY + 4.5F, headSize, 1.0F);
+                              // Logo rendering removed - was causing broken box display
+                              // If you want to re-enable, ensure the texture exists at:
+                              // src/main/resources/assets/noxium/textures/gui/logo.png
                               break;
                         case LOGIN:
                               r2.text(FontRegistry.ICONS, cx, startY + 28.0F, 32.0F, loginIcon, mainColor);
@@ -414,6 +422,8 @@ public class WaterMark {
 
       private static boolean shouldHide(ElementType type, boolean showPing, boolean showServer, boolean showLogin,
                   boolean showFps) {
+            if (type == ElementType.LOGO)
+                  return true; // Logo always hidden - was causing broken box
             if (type == ElementType.PING)
                   return !showPing;
             if (type == ElementType.SERVER)

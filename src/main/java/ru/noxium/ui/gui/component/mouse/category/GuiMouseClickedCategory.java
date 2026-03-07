@@ -10,8 +10,8 @@ import ru.noxium.util.render.math.animation.Direction;
 
 @Environment(EnvType.CLIENT)
 public class GuiMouseClickedCategory extends GuiScreen {
-   // Custom Order: Combat -> Movement -> Visuals -> Player -> Misc
-   public static Category[] sortedCategories = { Category.Combat, Category.Movement, Category.Visuals, Category.Player,
+   // Custom Order: Combat -> Visuals -> Player -> Misc
+   public static Category[] sortedCategories = { Category.Combat, Category.Visuals, Category.Player,
          Category.Misc };
 
    public static void mouseClickedCategory(int mouseX, int mouseY) {

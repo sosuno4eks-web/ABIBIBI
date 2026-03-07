@@ -54,6 +54,7 @@ import java.util.Random;
 )
 @Environment(EnvType.CLIENT)
 public class TriggerBot extends Module {
+   
    // Target selection settings
    public static MultiBooleanSetting targets = new MultiBooleanSetting(
       "Targets", 
@@ -65,6 +66,7 @@ public class TriggerBot extends Module {
    // Basic settings
    public static SliderSetting range = new SliderSetting("Range", 3.0F, 2.0F, 6.0F, 0.1F, false);
    public static BooleanSetting criticals = new BooleanSetting("Criticals", false);
+   public static BooleanSetting playersOnly = new BooleanSetting("Players Only", false);
    public static BooleanSetting onlyWeapons = new BooleanSetting("Only With Weapons", true);
    public static BooleanSetting ignoreEating = new BooleanSetting("Ignore While Eating", true);
    public static BooleanSetting ignoreTeam = new BooleanSetting("Ignore Team", true);
@@ -88,6 +90,7 @@ public class TriggerBot extends Module {
          targets, 
          range,
          criticals,
+         playersOnly,
          onlyWeapons, 
          ignoreEating, 
          ignoreTeam,
@@ -99,12 +102,12 @@ public class TriggerBot extends Module {
 
    @EventInit
    public void onUpdate(EventUpdate e) {
+      // Early exit checks - minimize overhead
       if (mc.player == null || mc.world == null || mc.interactionManager == null) {
          return;
       }
 
       if (!mc.player.isAlive()) {
-         this.toggle();
          return;
       }
 
@@ -116,12 +119,12 @@ public class TriggerBot extends Module {
       // Check if holding weapon - only attack with weapons if enabled
       if (onlyWeapons.get()) {
          ItemStack heldStack = mc.player.getMainHandStack();
-         if (!isWeapon(heldStack)) {
+         if (heldStack.isEmpty() || !isWeapon(heldStack)) {
             return;
          }
       }
 
-      // STEP 1: Initial Check - crosshairTarget must be LivingEntity within 3.0 blocks
+      // STEP 1: Initial Check - crosshairTarget must be LivingEntity within range
       LivingEntity target = getTargetFromCrosshair();
       
       if (target == null || !isValidTarget(target)) {
@@ -270,6 +273,13 @@ public class TriggerBot extends Module {
          return false;
       }
       
+      // Players Only mode - only target players
+      if (playersOnly.get()) {
+         if (!(entity instanceof PlayerEntity)) {
+            return false;
+         }
+      }
+      
       // Player-specific checks
       if (entity instanceof PlayerEntity p) {
          // Don't attack friends
@@ -298,11 +308,13 @@ public class TriggerBot extends Module {
          }
       }
       
-      // Mob-specific checks
-      if ((entity instanceof Monster || entity instanceof SlimeEntity || 
-           entity instanceof VillagerEntity || entity instanceof AnimalEntity) && 
-          !targets.get("Mobs")) {
-         return false;
+      // Mob-specific checks (only if not in players only mode)
+      if (!playersOnly.get()) {
+         if ((entity instanceof Monster || entity instanceof SlimeEntity || 
+              entity instanceof VillagerEntity || entity instanceof AnimalEntity) && 
+             !targets.get("Mobs")) {
+            return false;
+         }
       }
       
       // Final checks: not invulnerable, alive, and not an armor stand

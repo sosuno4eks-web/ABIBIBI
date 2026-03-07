@@ -1,0 +1,46 @@
+# Example strings to encode
+# Copy this file to strings.txt and add your own strings
+
+# Module Names
+Warden ESP
+Aim Assist
+Auto Totem
+Trigger Bot
+Chest Stealer
+Sprint
+ESP
+HUD
+Night Vision
+No Render
+
+# Settings
+Show Box
+Max Distance
+Enabled
+Disabled
+Smoothness
+Speed
+Range
+FOV
+
+# Method Names (for reflection)
+setYaw
+setPitch
+getTarget
+attack
+useItem
+getYaw
+getPitch
+
+# Field Names
+yaw
+pitch
+player
+world
+target
+
+# Chat Messages
+Module enabled
+Module disabled
+Target locked
+No target found

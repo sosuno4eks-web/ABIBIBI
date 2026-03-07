@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.noxium.Noxium;
-import ru.noxium.module.impl.player.NoPush;
 
 @Environment(EnvType.CLIENT)
 @Mixin({ Entity.class })
@@ -21,18 +20,6 @@ public abstract class EntityMixin {
 
    @Inject(method = { "pushAwayFrom" }, at = { @At("HEAD") }, cancellable = true)
    private void onPushAwayFrom(Entity entity, CallbackInfo ci) {
-      Entity self = (Entity) (Object) this;
-      if (self instanceof ClientPlayerEntity) {
-         if (Noxium.get != null && Noxium.get.manager != null) {
-            NoPush noPush = (NoPush) Noxium.get.manager.getModule(NoPush.class);
-            if (noPush != null && noPush.enable) {
-               if (entity instanceof PlayerEntity && noPush.players.get()) {
-                  ci.cancel();
-               } else if (entity instanceof LivingEntity && !(entity instanceof PlayerEntity) && noPush.mobs.get()) {
-                  ci.cancel();
-               }
-            }
-         }
-      }
+      // NoPush module removed - entity push enabled by default
    }
 }

@@ -37,8 +37,8 @@ public class GuiRenderLeftPanel extends GuiScreen {
             Color koronaColors = Renderer2D.ColorUtil
                         .getColor(Renderer2D.ColorUtil.replAlpha(Color.ORANGE.getRGB(), (int) (50.0F * mainAlpha)));
 
-            // Custom Order: Combat -> Movement -> Visuals -> Player -> Misc
-            Category[] sortedCategories = { Category.Combat, Category.Movement, Category.Visuals, Category.Player,
+            // Custom Order: Combat -> Visuals -> Player -> Misc
+            Category[] sortedCategories = { Category.Combat, Category.Visuals, Category.Player,
                         Category.Misc };
 
             // Calculate total width for centering

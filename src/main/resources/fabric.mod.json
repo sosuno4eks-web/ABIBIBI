@@ -1,18 +1,20 @@
 {
   "schemaVersion": 1,
-  "id": "levkindlc",
-  "version": "1.0",
-  "name": "Levkin DLC",
-  "description": "Levkin DLC Mod",
+  "id": "fastipping",
+  "version": "1.0.8",
+
+  "name": "Fast IP Ping",
+  "description": "Yeet the laggy reversed DNS lookup for literal IP server addresses",
   "authors": [
-    "Levkin"
+    "Fallen_Breath"
   ],
   "contact": {
-    "homepage": "",
-    "issues": ""
+    "homepage": "https://modrinth.com/mod/fast-ip-ping",
+    "sources": "https://github.com/Fallen-Breath/fast-ip-ping"
   },
-  "license": "Все права защищены!",
-  "icon": "assets/noxium/noxium.png",
+
+  "icon": "assets/fastipping/icon.png",
+
   "environment": "client",
   "entrypoints": {
     "client": [
@@ -23,14 +25,9 @@
     "noxium.mixins.json"
   ],
   "accessWidener": "noxium.accesswidener",
+
   "depends": {
-    "fabricloader": ">=0.17.2",
-    "minecraft": "*"
-  },
-  "custom": {
-    "modmenu": {
-      "links": {
-      }
-    }
+    "fabricloader": ">=0.11.4",
+    "minecraft": ">=1.21.11 <1.22"
   }
 }

@@ -143,7 +143,7 @@ public class Noxium implements ClientModInitializer {
       BindingManager.getInstance().initialize();
 
       this.guiClient = new GuiClient();
-      ru.noxium.proxy.ProxyManager.load();
+      // Proxy functionality removed
       RenderHandler.register();
       EventManager.register(this);
       modInitialized = true;
